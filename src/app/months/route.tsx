@@ -6,13 +6,13 @@ import React from "react";
 
 export const runtime = "edge";
 
-type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left";
+type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "daily-quote";
 
 // Device-specific safe areas for iPhone lock screens
 function getDeviceSafeArea(width: number, height: number) {
   const isIPhone = height > width && height > 2000;
   const isIPad = width > 1400;
-  
+
   // iPhone safe areas (top notch, bottom home indicator)
   if (isIPhone) {
     const topSafe = Math.max(44, height * 0.05); // Notch area
@@ -20,12 +20,12 @@ function getDeviceSafeArea(width: number, height: number) {
     const sideSafe = Math.max(20, width * 0.02); // Side margins
     return { top: topSafe, bottom: bottomSafe, left: sideSafe, right: sideSafe };
   }
-  
+
   // iPad safe areas
   if (isIPad) {
     return { top: 20, bottom: 20, left: 40, right: 40 };
   }
-  
+
   // Default
   return { top: 0, bottom: 0, left: 0, right: 0 };
 }
@@ -42,12 +42,13 @@ export async function GET(req: NextRequest) {
   const density = densityParam === "compact" ? "compact" : "cozy";
   const layout: Layout =
     layoutParam === "year" ||
-    layoutParam === "weeks" ||
-    layoutParam === "days-left" ||
-    layoutParam === "months-list"
+      layoutParam === "weeks" ||
+      layoutParam === "days-left" ||
+      layoutParam === "months-list" ||
+      layoutParam === "daily-quote"
       ? layoutParam
       : "months-3x4";
-  
+
   const theme: Theme = "minimal-black";
 
   const calendar = getCurrentYearCalendar();
@@ -137,6 +138,19 @@ export async function GET(req: NextRequest) {
       density,
       themeConfig
     );
+  } else if (layout === "daily-quote") {
+    return renderDailyQuote(
+      calendar,
+      width,
+      height,
+      paddingX,
+      paddingY,
+      paddingBottom,
+      contentWidth,
+      contentHeight,
+      density,
+      themeConfig
+    );
   } else {
     return renderDaysLeftView(
       calendar,
@@ -166,60 +180,26 @@ function renderMonths3x4(
   theme: ThemeConfig,
   monthNames: string[]
 ) {
-  // Optimized: Use 30% top, 40% middle, 30% bottom layout
-  const topSection = height * 0.3;
-  const middleSection = height * 0.4;
+  // Optimized: Use 10% top, 60% middle, 30% bottom layout
+  const topSection = height * 0.1;
+  const middleSection = height * 0.6;
   const bottomSection = height * 0.3;
-  
+
   const monthGap = density === "compact" ? 20 : 28;
   const monthHeight = (middleSection - monthGap * 3) / 4;
   const monthWidth = (contentWidth - monthGap * 2) / 3;
-  const daySize = Math.min(monthWidth / 7.5, monthHeight / 6.5);
+  const daySize = Math.min(monthWidth / 7.5, monthHeight / 6.5) * 1.12; // Increase by 12%
   const dayGap = density === "compact" ? 6 : 8;
-  const fontSize = Math.max(daySize * 0.65, 24);
+  const fontSize = Math.max(daySize * 0.65, 24) * 1.1; // Increase by 10%
 
   // Optimized: Use solid background instead of gradient for faster rendering
   const bgColor = theme.background;
-  
+
+  // Calculate percentage
+  const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
+  const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
+
   // Pre-calculate styles to avoid repeated calculations
-  const headerStyle = {
-    display: "flex" as const,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    width: "100%",
-    height: `${topSection}px`,
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-  };
-
-  const headerBoxStyle = {
-    display: "flex" as const,
-    flexDirection: "column" as const,
-    gap: 12,
-    alignItems: "center" as const,
-    padding: "20px 32px",
-    background: "rgba(0, 0, 0, 0.8)",
-    borderRadius: "16px",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-  };
-
-  const yearTextStyle = {
-    display: "flex" as const,
-    fontSize: Math.max(width * 0.045, 52),
-    fontWeight: 600,
-    color: theme.textColor,
-    letterSpacing: 4,
-  };
-
-  const daysLeftStyle = {
-    display: "flex" as const,
-    fontSize: Math.max(width * 0.018 * 1.3, 22),
-    fontWeight: 500,
-            color: "#ff0000",
-    letterSpacing: 1,
-  };
-
   const monthsGridStyle = {
     display: "flex" as const,
     flexWrap: "wrap" as const,
@@ -232,7 +212,53 @@ function renderMonths3x4(
     width: `${contentWidth}px`,
     height: `${middleSection}px`,
   };
-  
+
+  const footerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${bottomSection}px`,
+    position: "absolute" as const,
+    top: `${topSection + middleSection}px`,
+    left: 0,
+  };
+
+  const footerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  };
+
+  const yearTextStyle = {
+    display: "flex" as const,
+    fontSize: Math.max(width * 0.045, 52) * 1.1, // Increase by 10%
+    fontWeight: 600,
+    color: theme.textColor,
+    letterSpacing: 4,
+  };
+
+  const daysLeftStyle = {
+    display: "flex" as const,
+    fontSize: Math.max(width * 0.018 * 1.3, 22) * 1.1, // Increase by 10%
+    fontWeight: 500,
+    color: "#ff0000",
+    letterSpacing: 1,
+  };
+
+  const percentageStyle = {
+    display: "flex" as const,
+    fontSize: Math.max(width * 0.016, 20) * 1.1, // Increase by 10%
+    fontWeight: 500,
+    color: theme.textColor,
+    letterSpacing: 1,
+  };
+
   return new ImageResponse(
     (
       <div
@@ -246,19 +272,7 @@ function renderMonths3x4(
           fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Header in top 30% */}
-        <div style={headerStyle}>
-          <div style={headerBoxStyle}>
-            <div style={yearTextStyle}>
-              {calendar.year}
-            </div>
-            <div style={daysLeftStyle}>
-              {calendar.daysLeft} days left
-            </div>
-          </div>
-        </div>
-
-        {/* Months grid in middle 40% */}
+        {/* Months grid in middle 50% */}
         <div style={monthsGridStyle}>
           {calendar.months.map((monthBlock, monthIdx) => {
             const firstWeekday = new Date(
@@ -282,7 +296,7 @@ function renderMonths3x4(
 
             const monthLabelStyle = {
               display: "flex" as const,
-              fontSize: Math.max(fontSize * 0.8, 20),
+              fontSize: Math.max(fontSize * 0.8, 20) * 1.1, // Increase by 10%
               fontWeight: 600,
               color: theme.textColor,
               letterSpacing: 2,
@@ -293,7 +307,7 @@ function renderMonths3x4(
             };
 
             const boxes: React.ReactNode[] = [];
-            
+
             // Optimized: Empty boxes
             for (let i = 0; i < firstWeekday; i++) {
               boxes.push(
@@ -308,7 +322,7 @@ function renderMonths3x4(
             for (const d of monthBlock.days) {
               const isToday = d.isToday;
               const dayKey = `d-${monthIdx}-${d.day}`;
-              
+
               if (isToday) {
                 boxes.push(
                   <div
@@ -319,7 +333,7 @@ function renderMonths3x4(
                       height: daySize,
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: fontSize * 1.3,
+                      fontSize: fontSize * 1.3 * 1.1, // Increase by 10%
                       fontWeight: 700,
                       color: "#ffffff",
                       background: "#ff0000",
@@ -340,7 +354,7 @@ function renderMonths3x4(
                       height: daySize,
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: fontSize * 0.75,
+                      fontSize: fontSize * 0.75 * 1.1, // Increase by 10%
                       fontWeight: 400,
                       color: "#a1a1aa",
                       borderRadius: "50%",
@@ -392,6 +406,21 @@ function renderMonths3x4(
             );
           })}
         </div>
+
+        {/* Footer with year, days left, and percentage below months */}
+        <div style={footerStyle}>
+          <div style={footerBoxStyle}>
+            <div style={yearTextStyle}>
+              {calendar.year}
+            </div>
+            <div style={daysLeftStyle}>
+              {calendar.daysLeft} days remaining
+            </div>
+            <div style={percentageStyle}>
+              {percentageCompleted}% completed • {percentageRemaining}% remaining
+            </div>
+          </div>
+        </div>
       </div>
     ),
     { width, height }
@@ -411,39 +440,22 @@ function renderMonthsList(
   theme: ThemeConfig,
   monthNames: string[]
 ) {
-  // 30-30-40 layout
-  const topSection = height * 0.3;
-  const middleSection = height * 0.4;
+  // 10% top, 60% middle, 30% bottom layout
+  const topSection = height * 0.1;
+  const middleSection = height * 0.6;
   const bottomSection = height * 0.3;
-  
+
   const monthGap = density === "compact" ? 8 : 12;
   const monthHeight = (middleSection - monthGap * 11) / 12;
-  const daySize = monthHeight / 6;
+  const daySize = (monthHeight / 6) * 1.12; // Increase by 12%
   const dayGap = density === "compact" ? daySize * 0.1 : daySize * 0.15;
 
+
+  // Calculate percentage
+  const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
+  const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
+
   // Pre-calculate styles
-  const headerStyle = {
-    display: "flex" as const,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    width: "100%",
-    height: `${topSection}px`,
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-  };
-
-  const headerBoxStyle = {
-    display: "flex" as const,
-    flexDirection: "column" as const,
-    gap: 12,
-    alignItems: "center" as const,
-    padding: "20px 32px",
-    background: "rgba(0, 0, 0, 0.8)",
-    borderRadius: "16px",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-  };
-
   const monthsListStyle = {
     display: "flex" as const,
     flexDirection: "column" as const,
@@ -453,6 +465,28 @@ function renderMonthsList(
     left: `${paddingX}px`,
     width: `${contentWidth}px`,
     height: `${middleSection}px`,
+  };
+
+  const footerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${bottomSection}px`,
+    position: "absolute" as const,
+    top: `${topSection + middleSection}px`,
+    left: 0,
+  };
+
+  const footerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
   };
 
   return new ImageResponse(
@@ -468,19 +502,7 @@ function renderMonthsList(
           fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Header in top 30% */}
-        <div style={headerStyle}>
-          <div style={headerBoxStyle}>
-            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52), fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
-              {calendar.year}
-            </div>
-            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22), fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
-              {calendar.daysLeft} days left
-            </div>
-          </div>
-        </div>
-
-        {/* Months list in middle 40% */}
+        {/* Months list in middle 60% */}
         <div style={monthsListStyle}>
           {calendar.months.map((monthBlock, monthIdx) => {
             const firstWeekday = new Date(
@@ -499,7 +521,7 @@ function renderMonthsList(
             for (const d of monthBlock.days) {
               const isToday = d.isToday;
               const dayKey = `d-${monthIdx}-${d.day}`;
-              
+
               if (isToday) {
                 boxes.push(
                   <div
@@ -511,7 +533,7 @@ function renderMonthsList(
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: daySize * 0.5,
+                      fontSize: daySize * 0.5 * 1.1, // Increase by 10%
                       fontWeight: 700,
                       color: "#ffffff",
                       background: "#ff0000",
@@ -532,7 +554,7 @@ function renderMonthsList(
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: daySize * 0.4,
+                      fontSize: daySize * 0.4 * 1.1, // Increase by 10%
                       fontWeight: 400,
                       color: "#a1a1aa",
                       border: "1px solid rgba(255, 255, 255, 0.05)",
@@ -559,7 +581,7 @@ function renderMonthsList(
                   style={{
                     display: "flex",
                     width: 100,
-                    fontSize: 16,
+                    fontSize: 16 * 1.1, // Increase by 10%
                     fontWeight: 600,
                     color: theme.textColor,
                   }}
@@ -581,6 +603,21 @@ function renderMonthsList(
             );
           })}
         </div>
+
+        {/* Footer with year, days left, and percentage below months */}
+        <div style={footerStyle}>
+          <div style={footerBoxStyle}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52) * 1.1, fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
+              {calendar.year}
+            </div>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22) * 1.1, fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
+              {calendar.daysLeft} days remaining
+            </div>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.016, 20) * 1.1, fontWeight: 500, color: theme.textColor, letterSpacing: 1 }}>
+              {percentageCompleted}% completed • {percentageRemaining}% remaining
+            </div>
+          </div>
+        </div>
       </div>
     ),
     { width, height }
@@ -599,12 +636,17 @@ function renderYearView(
   density: string,
   theme: ThemeConfig
 ) {
-  // 30-30-40 layout
-  const topSection = height * 0.3;
-  const middleSection = height * 0.4;
+  // 10% top, 60% middle, 30% bottom layout
+  const topSection = height * 0.1;
+  const middleSection = height * 0.6;
   const bottomSection = height * 0.3;
-  
-  const daySize = Math.min(middleSection / 53, contentWidth / 53);
+
+
+  // Calculate percentage
+  const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
+  const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
+
+  const daySize = Math.min(middleSection / 53, contentWidth / 53) * 1.12; // Increase by 12%
   const gap = density === "compact" ? 2 : 3;
 
   const headerStyle = {
@@ -719,11 +761,16 @@ function renderWeeksView(
   density: string,
   theme: ThemeConfig
 ) {
-  // 30-30-40 layout
-  const topSection = height * 0.3;
-  const middleSection = height * 0.4;
+  // 10% top, 60% middle, 30% bottom layout
+  const topSection = height * 0.1;
+  const middleSection = height * 0.6;
   const bottomSection = height * 0.3;
-  
+
+
+  // Calculate percentage
+  const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
+  const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
+
   const weekGap = density === "compact" ? 3 : 4;
   const weekHeight = (middleSection - weekGap * (calendar.weeks.length - 1)) / calendar.weeks.length;
   const dayWidth = (contentWidth - weekGap * 6) / 7;
@@ -816,7 +863,7 @@ function renderWeeksView(
                         background: "#ff0000",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: weekHeight * 0.3,
+                        fontSize: weekHeight * 0.3 * 1.1, // Increase by 10%
                         fontWeight: 700,
                         color: "#ffffff",
                         border: "2px solid #ff0000",
@@ -838,7 +885,7 @@ function renderWeeksView(
                         background: d.isPast ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.45)",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: weekHeight * 0.25,
+                        fontSize: weekHeight * 0.25 * 1.1, // Increase by 10%
                         fontWeight: 500,
                         color: "#ffffff",
                         border: "1px solid rgba(255, 255, 255, 0.05)",
@@ -870,15 +917,20 @@ function renderDaysLeftView(
   density: string,
   theme: ThemeConfig
 ) {
-  // 30-30-40 layout
-  const topSection = height * 0.3;
-  const middleSection = height * 0.4;
+  // 10% top, 60% middle, 30% bottom layout
+  const topSection = height * 0.1;
+  const middleSection = height * 0.6;
   const bottomSection = height * 0.3;
-  
+
+
+  // Calculate percentage
+  const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
+  const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
+
   const remainingDays = calendar.months
     .flatMap((m) => m.days)
     .filter((d) => !d.isPast && !d.isToday);
-  
+
   const daySize = Math.min(
     Math.sqrt((middleSection * contentWidth) / remainingDays.length) * 0.9,
     40
@@ -964,23 +1016,193 @@ function renderDaysLeftView(
                   background: "rgba(255,255,255,0.12)",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: daySize * 0.35,
+                  fontSize: daySize * 0.35 * 1.1, // Increase by 10%
                   fontWeight: 600,
                   color: "#ffffff",
                   border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
-                <div style={{ display: "flex", fontSize: daySize * 0.25, opacity: 0.8 }}>
+                <div style={{ display: "flex", fontSize: daySize * 0.25 * 1.1, opacity: 0.8 }}> {/* Increase by 10% */}
                   {d.month + 1}/{d.day}
                 </div>
                 {daysUntil > 0 && (
-                  <div style={{ display: "flex", fontSize: daySize * 0.2, color: "#ff0000", opacity: 0.9 }}>
+                  <div style={{ display: "flex", fontSize: daySize * 0.2 * 1.1, color: "#ff0000", opacity: 0.9 }}> {/* Increase by 10% */}
                     +{daysUntil}
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
+      </div>
+    ),
+    { width, height }
+  );
+}
+
+// Fallback quotes in case API fails
+const FALLBACK_QUOTES = [
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+  { text: "Your time is limited, don't waste it living someone else's life.", author: "Steve Jobs" },
+  { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+  { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle" },
+  { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },
+  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { text: "Don't let yesterday take up too much of today.", author: "Will Rogers" },
+  { text: "You learn more from failure than from success.", author: "Unknown" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "The only limit to our realization of tomorrow is our doubts of today.", author: "Franklin D. Roosevelt" },
+  { text: "Do not wait to strike till the iron is hot, but make it hot by striking.", author: "William Butler Yeats" },
+];
+
+async function getRandomQuote(): Promise<{ text: string; author: string }> {
+  try {
+    const response = await fetch('https://api.quotable.io/random', {
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return {
+      text: data.content,
+      author: data.author,
+    };
+  } catch (error) {
+    // Return random fallback quote
+    const randomIndex = Math.floor(Math.random() * FALLBACK_QUOTES.length);
+    return FALLBACK_QUOTES[randomIndex];
+  }
+}
+
+async function renderDailyQuote(
+  calendar: ReturnType<typeof getCurrentYearCalendar>,
+  width: number,
+  height: number,
+  paddingX: number,
+  paddingY: number,
+  paddingBottom: number,
+  contentWidth: number,
+  contentHeight: number,
+  density: string,
+  theme: ThemeConfig
+) {
+  // 15% top, 55% middle, 30% bottom layout
+  const topSection = height * 0.15;
+  const middleSection = height * 0.55;
+  const bottomSection = height * 0.3;
+
+  // Calculate percentage
+  const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
+  const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
+
+  // Fetch quote
+  const quote = await getRandomQuote();
+
+  // Responsive font sizing
+  const quoteSize = Math.max(width * 0.028, 32) * 1.1; // Increase by 10%
+  const authorSize = Math.max(width * 0.02, 24) * 1.1; // Increase by 10%
+
+  const quoteContainerStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${middleSection}px`,
+    position: "absolute" as const,
+    top: `${topSection}px`,
+    left: 0,
+    padding: `0 ${paddingX * 2}px`,
+  };
+
+  const footerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${bottomSection}px`,
+    position: "absolute" as const,
+    top: `${topSection + middleSection}px`,
+    left: 0,
+  };
+
+  const footerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  };
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width,
+          height,
+          display: "flex",
+          position: "relative",
+          background: theme.background,
+          color: theme.textColor,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+        }}
+      >
+        {/* Quote in middle 55% */}
+        <div style={quoteContainerStyle}>
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 24,
+            maxWidth: "90%",
+            textAlign: "center",
+          }}>
+            <div style={{
+              display: "flex",
+              fontSize: quoteSize,
+              fontWeight: 400,
+              color: theme.textColor,
+              lineHeight: 1.5,
+              letterSpacing: 0.5,
+            }}>
+              "{quote.text}"
+            </div>
+            <div style={{
+              display: "flex",
+              fontSize: authorSize,
+              fontWeight: 500,
+              color: "rgba(255, 255, 255, 0.7)",
+              fontStyle: "italic",
+              letterSpacing: 1,
+            }}>
+              — {quote.author}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer with year, days left, and percentage */}
+        <div style={footerStyle}>
+          <div style={footerBoxStyle}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52) * 1.1, fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
+              {calendar.year}
+            </div>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22) * 1.1, fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
+              {calendar.daysLeft} days remaining
+            </div>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.016, 20) * 1.1, fontWeight: 500, color: theme.textColor, letterSpacing: 1 }}>
+              {percentageCompleted}% completed • {percentageRemaining}% remaining
+            </div>
+          </div>
         </div>
       </div>
     ),

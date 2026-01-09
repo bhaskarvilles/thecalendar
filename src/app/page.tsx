@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { DEVICE_PRESETS } from "@/lib/devices";
@@ -35,12 +35,12 @@ import {
 } from "@/components/ui/sheet";
 
 type Density = "cozy" | "compact";
-type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left";
+type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "daily-quote";
 
 export default function Home() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  
+
   const [origin] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return window.location.origin;
@@ -104,7 +104,7 @@ export default function Home() {
               <div>
                 <h1 className="text-4xl font-bold tracking-tight md:text-5xl text-foreground mb-2">
                   Minimal Calendar Wallpaper
-          </h1>
+                </h1>
                 <p className="text-base text-muted-foreground max-w-2xl">
                   Generate a pitch-black calendar wallpaper that updates daily. Perfect for iOS lock screens with Shortcuts automation.
                 </p>
@@ -139,165 +139,165 @@ export default function Home() {
                     Setup Guide
                   </Button>
                 </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-2xl bg-background border-border overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2 text-foreground">
-                    <HelpCircle className="size-5" />
-                    Complete Setup Guide
-                  </SheetTitle>
-                  <SheetDescription className="text-muted-foreground">
-                    Step-by-step instructions to set up your calendar wallpaper with iOS Shortcuts
-                  </SheetDescription>
-                </SheetHeader>
-                
-                <div className="mt-6 space-y-6">
-                  {/* Wallpaper URL Section */}
-                  <Card className="border-border bg-card">
-                    <CardHeader>
-                      <CardTitle className="text-base text-foreground">Your Wallpaper URL</CardTitle>
-                      <CardDescription className="text-muted-foreground">
-                        Copy this URL to use in Shortcuts
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex gap-2">
-                        <Input
-                          value={wallpaperUrl}
-                          readOnly
-                          className="font-mono text-xs bg-background border-border text-foreground"
-                          suppressHydrationWarning
-                        />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={handleCopy}
-                              className="border-red-400/60 hover:bg-red-500/15"
-                            >
-                              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {copied ? "Copied!" : "Copy URL"}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline" className="text-xs">
-                          {device.width} × {device.height}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {layout}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {density}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
+                <SheetContent side="right" className="w-full sm:max-w-2xl bg-background border-border overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle className="flex items-center gap-2 text-foreground">
+                      <HelpCircle className="size-5" />
+                      Complete Setup Guide
+                    </SheetTitle>
+                    <SheetDescription className="text-muted-foreground">
+                      Step-by-step instructions to set up your calendar wallpaper with iOS Shortcuts
+                    </SheetDescription>
+                  </SheetHeader>
 
-                  <Separator className="bg-border" />
+                  <div className="mt-6 space-y-6">
+                    {/* Wallpaper URL Section */}
+                    <Card className="border-border bg-card">
+                      <CardHeader>
+                        <CardTitle className="text-base text-foreground">Your Wallpaper URL</CardTitle>
+                        <CardDescription className="text-muted-foreground">
+                          Copy this URL to use in Shortcuts
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex gap-2">
+                          <Input
+                            value={wallpaperUrl}
+                            readOnly
+                            className="font-mono text-xs bg-background border-border text-foreground"
+                            suppressHydrationWarning
+                          />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={handleCopy}
+                                className="border-red-400/60 hover:bg-red-500/15"
+                              >
+                                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {copied ? "Copied!" : "Copy URL"}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Badge variant="outline" className="text-xs">
+                            {device.width} × {device.height}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {layout}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {density}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  {/* Setup Steps */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-foreground">Setup Instructions</h3>
-                    
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="step1">
-                        <AccordionTrigger className="text-foreground">Step 1: Create Automation</AccordionTrigger>
-                        <AccordionContent>
-                          <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                            <li>Open <strong className="text-foreground">Shortcuts</strong> app on your iPhone/iPad</li>
-                            <li>Navigate to the <strong className="text-foreground">Automation</strong> tab at the bottom</li>
-                            <li>Tap the <strong className="text-foreground">+</strong> button in the top right corner</li>
-                            <li>Select <strong className="text-foreground">Time of Day</strong> from the trigger options</li>
-                          </ol>
-                        </AccordionContent>
-                      </AccordionItem>
-                      
-                      <AccordionItem value="step2">
-                        <AccordionTrigger className="text-foreground">Step 2: Configure Schedule</AccordionTrigger>
-                        <AccordionContent>
-                          <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                            <li>Choose when the automation should run (e.g., <strong className="text-foreground">6:00 AM</strong>)</li>
-                            <li>Set the repeat frequency to <strong className="text-foreground">Daily</strong></li>
-                            <li>Enable the <strong className="text-foreground">Run Immediately</strong> toggle</li>
-                            <li>Tap <strong className="text-foreground">Create New Shortcut</strong> to proceed</li>
-                          </ol>
-                        </AccordionContent>
-                      </AccordionItem>
-                      
-                      <AccordionItem value="step3">
-                        <AccordionTrigger className="text-foreground">Step 3: Add URL Action</AccordionTrigger>
-                        <AccordionContent>
-                          <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                            <li>In the shortcut editor, tap <strong className="text-foreground">+</strong> to add an action</li>
-                            <li>Search for and add <strong className="text-foreground">Get Contents of URL</strong> action</li>
-                            <li>Paste the URL from above into the URL field</li>
-                            <li>Ensure the method is set to <strong className="text-foreground">GET</strong> (should be default)</li>
-                            <li>Verify the URL is correct and tap <strong className="text-foreground">Done</strong></li>
-                          </ol>
-                        </AccordionContent>
-                      </AccordionItem>
-                      
-                      <AccordionItem value="step4">
-                        <AccordionTrigger className="text-foreground">Step 4: Set Wallpaper</AccordionTrigger>
-                        <AccordionContent>
-                          <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                            <li>Add another action: <strong className="text-foreground">Set Wallpaper Photo</strong></li>
-                            <li>Choose <strong className="text-foreground">Lock Screen</strong> as the target</li>
-                            <li>Tap the arrow next to the action to expand options</li>
-                            <li>Disable <strong className="text-foreground">Crop to Subject</strong> toggle</li>
-                            <li>Disable <strong className="text-foreground">Show Preview</strong> toggle</li>
-                            <li>Tap <strong className="text-foreground">Done</strong> to save the automation</li>
-                          </ol>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                    <Separator className="bg-border" />
+
+                    {/* Setup Steps */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground">Setup Instructions</h3>
+
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="step1">
+                          <AccordionTrigger className="text-foreground">Step 1: Create Automation</AccordionTrigger>
+                          <AccordionContent>
+                            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                              <li>Open <strong className="text-foreground">Shortcuts</strong> app on your iPhone/iPad</li>
+                              <li>Navigate to the <strong className="text-foreground">Automation</strong> tab at the bottom</li>
+                              <li>Tap the <strong className="text-foreground">+</strong> button in the top right corner</li>
+                              <li>Select <strong className="text-foreground">Time of Day</strong> from the trigger options</li>
+                            </ol>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="step2">
+                          <AccordionTrigger className="text-foreground">Step 2: Configure Schedule</AccordionTrigger>
+                          <AccordionContent>
+                            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                              <li>Choose when the automation should run (e.g., <strong className="text-foreground">6:00 AM</strong>)</li>
+                              <li>Set the repeat frequency to <strong className="text-foreground">Daily</strong></li>
+                              <li>Enable the <strong className="text-foreground">Run Immediately</strong> toggle</li>
+                              <li>Tap <strong className="text-foreground">Create New Shortcut</strong> to proceed</li>
+                            </ol>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="step3">
+                          <AccordionTrigger className="text-foreground">Step 3: Add URL Action</AccordionTrigger>
+                          <AccordionContent>
+                            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                              <li>In the shortcut editor, tap <strong className="text-foreground">+</strong> to add an action</li>
+                              <li>Search for and add <strong className="text-foreground">Get Contents of URL</strong> action</li>
+                              <li>Paste the URL from above into the URL field</li>
+                              <li>Ensure the method is set to <strong className="text-foreground">GET</strong> (should be default)</li>
+                              <li>Verify the URL is correct and tap <strong className="text-foreground">Done</strong></li>
+                            </ol>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="step4">
+                          <AccordionTrigger className="text-foreground">Step 4: Set Wallpaper</AccordionTrigger>
+                          <AccordionContent>
+                            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                              <li>Add another action: <strong className="text-foreground">Set Wallpaper Photo</strong></li>
+                              <li>Choose <strong className="text-foreground">Lock Screen</strong> as the target</li>
+                              <li>Tap the arrow next to the action to expand options</li>
+                              <li>Disable <strong className="text-foreground">Crop to Subject</strong> toggle</li>
+                              <li>Disable <strong className="text-foreground">Show Preview</strong> toggle</li>
+                              <li>Tap <strong className="text-foreground">Done</strong> to save the automation</li>
+                            </ol>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
+
+                    <Separator className="bg-border" />
+
+                    {/* Tips and Notes */}
+                    <div className="space-y-4">
+                      <Alert className="border-dashed border-border bg-muted">
+                        <AlertTitle className="text-sm text-foreground">Quick Visual Check</AlertTitle>
+                        <AlertDescription className="text-xs mt-2 text-muted-foreground">
+                          Before setting up the automation, open the URL in Safari first to preview the calendar.
+                          If it looks slightly zoomed or cropped, try switching between <strong className="text-foreground">Cozy</strong> and
+                          <strong className="text-foreground"> Compact</strong> density, or manually adjust the
+                          <code className="mx-1 px-1 bg-muted rounded text-foreground">width</code> and
+                          <code className="mx-1 px-1 bg-muted rounded text-foreground">height</code> values in the URL.
+                        </AlertDescription>
+                      </Alert>
+
+                      <Alert className="border-red-500/20 bg-red-500/5">
+                        <Tablet className="size-4 text-red-400" />
+                        <AlertTitle className="text-red-300 text-sm">iPad Users</AlertTitle>
+                        <AlertDescription className="text-red-200/80 text-xs mt-2">
+                          For landscape lock screens, swap the <code className="mx-1 px-1 bg-red-500/20 rounded text-foreground">width</code> ↔
+                          <code className="mx-1 px-1 bg-red-500/20 rounded text-foreground">height</code> values in the URL and re-run the automation.
+                        </AlertDescription>
+                      </Alert>
+
+                      <Alert className="border-border bg-muted">
+                        <Zap className="size-4 text-muted-foreground" />
+                        <AlertTitle className="text-sm text-foreground">Pro Tips</AlertTitle>
+                        <AlertDescription className="text-xs mt-2 text-muted-foreground space-y-1">
+                          <p>• The wallpaper updates automatically every day at your chosen time</p>
+                          <p>• Make sure your device is connected to the internet for the automation to work</p>
+                          <p>• You can test the automation manually by running it from the Shortcuts app</p>
+                          <p>• The calendar shows dots for all dates, with only today's date in a red circle</p>
+                        </AlertDescription>
+                      </Alert>
+                    </div>
                   </div>
-
-                  <Separator className="bg-border" />
-
-                  {/* Tips and Notes */}
-                  <div className="space-y-4">
-                    <Alert className="border-dashed border-border bg-muted">
-                      <AlertTitle className="text-sm text-foreground">Quick Visual Check</AlertTitle>
-                      <AlertDescription className="text-xs mt-2 text-muted-foreground">
-                        Before setting up the automation, open the URL in Safari first to preview the calendar. 
-                        If it looks slightly zoomed or cropped, try switching between <strong className="text-foreground">Cozy</strong> and 
-                        <strong className="text-foreground"> Compact</strong> density, or manually adjust the 
-                        <code className="mx-1 px-1 bg-muted rounded text-foreground">width</code> and 
-                        <code className="mx-1 px-1 bg-muted rounded text-foreground">height</code> values in the URL.
-                      </AlertDescription>
-                    </Alert>
-
-                    <Alert className="border-red-500/20 bg-red-500/5">
-                      <Tablet className="size-4 text-red-400" />
-                      <AlertTitle className="text-red-300 text-sm">iPad Users</AlertTitle>
-                      <AlertDescription className="text-red-200/80 text-xs mt-2">
-                        For landscape lock screens, swap the <code className="mx-1 px-1 bg-red-500/20 rounded text-foreground">width</code> ↔ 
-                        <code className="mx-1 px-1 bg-red-500/20 rounded text-foreground">height</code> values in the URL and re-run the automation.
-                      </AlertDescription>
-                    </Alert>
-
-                    <Alert className="border-border bg-muted">
-                      <Zap className="size-4 text-muted-foreground" />
-                      <AlertTitle className="text-sm text-foreground">Pro Tips</AlertTitle>
-                      <AlertDescription className="text-xs mt-2 text-muted-foreground space-y-1">
-                        <p>• The wallpaper updates automatically every day at your chosen time</p>
-                        <p>• Make sure your device is connected to the internet for the automation to work</p>
-                        <p>• You can test the automation manually by running it from the Shortcuts app</p>
-                        <p>• The calendar shows dots for all dates, with only today's date in a red circle</p>
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-                </div>
-              </SheetContent>
+                </SheetContent>
               </Sheet>
             </div>
           </div>
-          
+
           <Alert className="border-red-500/20 bg-red-500/5">
             <Zap className="size-4 text-red-400" />
             <AlertTitle className="text-red-300">Minimal Design</AlertTitle>
@@ -325,214 +325,219 @@ export default function Home() {
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Main Configuration */}
               <div className="lg:col-span-2 space-y-6">
-              <Card className="border-border bg-card backdrop-blur">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="size-5" />
-                    Configuration
-                  </CardTitle>
-                  <CardDescription>
-                    Customize your calendar wallpaper settings
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Device Selection */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="device" className="text-sm font-semibold flex items-center gap-2">
-                        <Smartphone className="size-4" />
-                        Device Model
+                <Card className="border-border bg-card backdrop-blur">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="size-5" />
+                      Configuration
+                    </CardTitle>
+                    <CardDescription>
+                      Customize your calendar wallpaper settings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Device Selection */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="device" className="text-sm font-semibold flex items-center gap-2">
+                          <Smartphone className="size-4" />
+                          Device Model
+                        </Label>
+                        <Badge variant="outline" className="text-xs">
+                          {device.family === "iphone" ? "iPhone" : "iPad"}
+                        </Badge>
+                      </div>
+                      <Select value={deviceId} onValueChange={setDeviceId}>
+                        <SelectTrigger id="device" className="w-full bg-background border-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                          <SelectGroup>
+                            <SelectLabel className="flex items-center gap-2 text-muted-foreground font-semibold">
+                              <Smartphone className="size-4" />
+                              iPhone (X → 17 Pro Max)
+                            </SelectLabel>
+                            {iphones.map((d) => (
+                              <SelectItem key={d.id} value={d.id} className="text-foreground hover:bg-accent focus:bg-accent">
+                                {d.label} ({d.width}×{d.height})
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                          <SelectGroup>
+                            <SelectLabel className="flex items-center gap-2 text-muted-foreground font-semibold">
+                              <Tablet className="size-4" />
+                              iPad
+                            </SelectLabel>
+                            {ipads.map((d) => (
+                              <SelectItem key={d.id} value={d.id} className="text-foreground hover:bg-accent focus:bg-accent">
+                                {d.label} ({d.width}×{d.height})
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="size-3 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Portrait wallpaper dimensions. Adjust width/height in URL if needed.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        Portrait dimensions optimized for lock screen
+                      </p>
+                    </div>
+
+                    <Separator className="bg-border" />
+
+                    {/* Layout Selection */}
+                    <div className="space-y-3">
+                      <Label htmlFor="layout" className="text-sm font-semibold">
+                        Layout Style
                       </Label>
-                      <Badge variant="outline" className="text-xs">
-                        {device.family === "iphone" ? "iPhone" : "iPad"}
-                      </Badge>
+                      <Select value={layout} onValueChange={(value) => setLayout(value as Layout)}>
+                        <SelectTrigger id="layout" className="w-full bg-background border-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                          <SelectItem value="months-3x4" className="text-foreground hover:bg-accent focus:bg-accent">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">Months 3×4 Grid</span>
+                              <span className="text-xs text-muted-foreground">Recommended - Best visibility</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="months-list" className="text-foreground hover:bg-accent focus:bg-accent">
+                            Months List - Vertical layout
+                          </SelectItem>
+                          <SelectItem value="year" className="text-foreground hover:bg-accent focus:bg-accent">
+                            Year View - Compact overview
+                          </SelectItem>
+                          <SelectItem value="weeks" className="text-foreground hover:bg-accent focus:bg-accent">
+                            Weeks View - All 52 weeks
+                          </SelectItem>
+                          <SelectItem value="days-left" className="text-foreground hover:bg-accent focus:bg-accent">
+                            Days Left - Countdown focus
+                          </SelectItem>
+                          <SelectItem value="daily-quote" className="text-foreground hover:bg-accent focus:bg-accent">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">Daily Quote</span>
+                              <span className="text-xs text-muted-foreground">Random inspirational quote</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Alert className="border-blue-500/20 bg-blue-500/5">
+                        <AlertDescription className="text-xs">
+                          {layout === "months-3x4" && "Best visibility: months in a 3×4 grid for easy scanning."}
+                          {layout === "months-list" && "Traditional vertical layout with all months stacked."}
+                          {layout === "year" && "Compact year overview showing all 365 days as dots."}
+                          {layout === "weeks" && "Weekly view showing all 52 weeks of the year."}
+                          {layout === "days-left" && "Focus on remaining days with countdown visualization."}
+                          {layout === "daily-quote" && "Random inspirational quote that changes each time, perfect for daily motivation."}
+                        </AlertDescription>
+                      </Alert>
                     </div>
-                    <Select value={deviceId} onValueChange={setDeviceId}>
-                      <SelectTrigger id="device" className="w-full bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-border text-popover-foreground">
-                        <SelectGroup>
-                          <SelectLabel className="flex items-center gap-2 text-muted-foreground font-semibold">
-                            <Smartphone className="size-4" />
-                            iPhone (X → 17 Pro Max)
-                          </SelectLabel>
-                          {iphones.map((d) => (
-                            <SelectItem key={d.id} value={d.id} className="text-foreground hover:bg-accent focus:bg-accent">
-                              {d.label} ({d.width}×{d.height})
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                        <SelectGroup>
-                          <SelectLabel className="flex items-center gap-2 text-muted-foreground font-semibold">
-                            <Tablet className="size-4" />
-                            iPad
-                          </SelectLabel>
-                          {ipads.map((d) => (
-                            <SelectItem key={d.id} value={d.id} className="text-foreground hover:bg-accent focus:bg-accent">
-                              {d.label} ({d.width}×{d.height})
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="size-3 cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Portrait wallpaper dimensions. Adjust width/height in URL if needed.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      Portrait dimensions optimized for lock screen
-          </p>
-        </div>
 
-                  <Separator className="bg-border" />
+                    <Separator className="bg-border" />
 
-                  {/* Layout Selection */}
-                  <div className="space-y-3">
-                    <Label htmlFor="layout" className="text-sm font-semibold">
-                      Layout Style
-                    </Label>
-                    <Select value={layout} onValueChange={(value) => setLayout(value as Layout)}>
-                      <SelectTrigger id="layout" className="w-full bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-border text-popover-foreground">
-                        <SelectItem value="months-3x4" className="text-foreground hover:bg-accent focus:bg-accent">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-foreground">Months 3×4 Grid</span>
-                            <span className="text-xs text-muted-foreground">Recommended - Best visibility</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="months-list" className="text-foreground hover:bg-accent focus:bg-accent">
-                          Months List - Vertical layout
-                        </SelectItem>
-                        <SelectItem value="year" className="text-foreground hover:bg-accent focus:bg-accent">
-                          Year View - Compact overview
-                        </SelectItem>
-                        <SelectItem value="weeks" className="text-foreground hover:bg-accent focus:bg-accent">
-                          Weeks View - All 52 weeks
-                        </SelectItem>
-                        <SelectItem value="days-left" className="text-foreground hover:bg-accent focus:bg-accent">
-                          Days Left - Countdown focus
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Alert className="border-blue-500/20 bg-blue-500/5">
-                      <AlertDescription className="text-xs">
-                        {layout === "months-3x4" && "Best visibility: months in a 3×4 grid for easy scanning."}
-                        {layout === "months-list" && "Traditional vertical layout with all months stacked."}
-                        {layout === "year" && "Compact year overview showing all 365 days as dots."}
-                        {layout === "weeks" && "Weekly view showing all 52 weeks of the year."}
-                        {layout === "days-left" && "Focus on remaining days with countdown visualization."}
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-
-                  <Separator className="bg-border" />
-
-                  {/* Density Selection with Radio Group */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold">Density</Label>
-                    <RadioGroup value={density} onValueChange={(value) => setDensity(value as Density)} className="grid grid-cols-2 gap-3">
-                      <div>
-                        <RadioGroupItem value="cozy" id="cozy" className="peer sr-only" />
-                        <Label
-                          htmlFor="cozy"
-                          className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 sm:p-4 cursor-pointer transition-all ${
-                            density === "cozy"
+                    {/* Density Selection with Radio Group */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold">Density</Label>
+                      <RadioGroup value={density} onValueChange={(value) => setDensity(value as Density)} className="grid grid-cols-2 gap-3">
+                        <div>
+                          <RadioGroupItem value="cozy" id="cozy" className="peer sr-only" />
+                          <Label
+                            htmlFor="cozy"
+                            className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 sm:p-4 cursor-pointer transition-all ${density === "cozy"
                               ? "border-red-500 bg-red-500/15 shadow-[0_0_30px_rgba(255,0,0,0.4)]"
                               : "border-border bg-muted hover:border-border/80"
-                          }`}
-                        >
-                          <span className="text-sm font-medium mb-1">Cozy</span>
-                          <span className="text-xs text-muted-foreground text-center">More breathing room</span>
-                        </Label>
-                      </div>
-                      <div>
-                        <RadioGroupItem value="compact" id="compact" className="peer sr-only" />
-                        <Label
-                          htmlFor="compact"
-                          className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 sm:p-4 cursor-pointer transition-all ${
-                            density === "compact"
-                              ? "border-red-500 bg-red-500/15 shadow-[0_0_30px_rgba(255,0,0,0.4)]"
-                              : "border-border bg-muted hover:border-border/80"
-                          }`}
-                        >
-                          <span className="text-sm font-medium mb-1">Compact</span>
-                          <span className="text-xs text-muted-foreground text-center">Fits more detail</span>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* URL Output */}
-              <Card className="border-border bg-card/50">
-                <CardHeader>
-                  <CardTitle className="text-base">Wallpaper URL</CardTitle>
-                  <CardDescription className="text-xs">
-                    Copy this URL for your Shortcuts automation
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Generated URL</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={wallpaperUrl}
-                        readOnly
-                        className="font-mono text-xs bg-background border-border"
-                        suppressHydrationWarning
-                      />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={handleCopy}
-                            className="border-red-400/60 hover:bg-red-500/15"
+                              }`}
                           >
-                            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {copied ? "Copied!" : "Copy URL"}
-                        </TooltipContent>
-                      </Tooltip>
+                            <span className="text-sm font-medium mb-1">Cozy</span>
+                            <span className="text-xs text-muted-foreground text-center">More breathing room</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="compact" id="compact" className="peer sr-only" />
+                          <Label
+                            htmlFor="compact"
+                            className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 sm:p-4 cursor-pointer transition-all ${density === "compact"
+                              ? "border-red-500 bg-red-500/15 shadow-[0_0_30px_rgba(255,0,0,0.4)]"
+                              : "border-border bg-muted hover:border-border/80"
+                              }`}
+                          >
+                            <span className="text-sm font-medium mb-1">Compact</span>
+                            <span className="text-xs text-muted-foreground text-center">Fits more detail</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
-                  </div>
-                  <Separator />
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Resolution</span>
-                      <Badge variant="secondary">
-                        {device.width} × {device.height}
-                      </Badge>
+                  </CardContent>
+                </Card>
+
+                {/* URL Output */}
+                <Card className="border-border bg-card/50">
+                  <CardHeader>
+                    <CardTitle className="text-base">Wallpaper URL</CardTitle>
+                    <CardDescription className="text-xs">
+                      Copy this URL for your Shortcuts automation
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Generated URL</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={wallpaperUrl}
+                          readOnly
+                          className="font-mono text-xs bg-background border-border"
+                          suppressHydrationWarning
+                        />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={handleCopy}
+                              className="border-red-400/60 hover:bg-red-500/15"
+                            >
+                              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {copied ? "Copied!" : "Copy URL"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Layout</span>
-                      <Badge variant="outline">{layout}</Badge>
+                    <Separator />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Resolution</span>
+                        <Badge variant="secondary">
+                          {device.width} × {device.height}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Layout</span>
+                        <Badge variant="outline">{layout}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Density</span>
+                        <Badge variant="outline">{density}</Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Density</span>
-                      <Badge variant="outline">{density}</Badge>
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full"
-                    onClick={() => window.open(wallpaperUrl, "_blank")}
-                    variant="outline"
-                  >
-                    <ExternalLink className="size-4 mr-2" />
-                    Preview in New Tab
-                  </Button>
-                </CardContent>
-              </Card>
+                    <Button
+                      className="w-full"
+                      onClick={() => window.open(wallpaperUrl, "_blank")}
+                      variant="outline"
+                    >
+                      <ExternalLink className="size-4 mr-2" />
+                      Preview in New Tab
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </div>
 
@@ -599,7 +604,7 @@ export default function Home() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">
-                Once deployed (e.g. to Vercel), use the live domain in your Shortcuts URL 
+                Once deployed (e.g. to Vercel), use the live domain in your Shortcuts URL
                 and your lock screen will stay in sync with the year.
               </p>
               <div className="flex items-center gap-2 flex-wrap">
@@ -619,7 +624,7 @@ export default function Home() {
                 Test URL
               </a>
             </Button>
-        </div>
+          </div>
         </footer>
       </main>
     </div>
