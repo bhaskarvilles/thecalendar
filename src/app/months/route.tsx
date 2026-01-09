@@ -5,6 +5,8 @@ import { THEMES, Theme, ThemeConfig } from "@/lib/themes";
 import React from "react";
 
 export const runtime = "edge";
+export const maxDuration = 30; // Edge runtime max duration (30 seconds)
+export const dynamic = "force-dynamic"; // Ensure fresh data for today's date
 
 type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left";
 
@@ -31,32 +33,33 @@ function getDeviceSafeArea(width: number, height: number) {
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const widthParam = searchParams.get("width");
-  const heightParam = searchParams.get("height");
-  const densityParam = searchParams.get("density");
-  const layoutParam = searchParams.get("layout");
-  const themeParam = searchParams.get("theme");
+  try {
+    const { searchParams } = new URL(req.url);
+    const widthParam = searchParams.get("width");
+    const heightParam = searchParams.get("height");
+    const densityParam = searchParams.get("density");
+    const layoutParam = searchParams.get("layout");
+    const themeParam = searchParams.get("theme");
 
-  const width = Math.max(800, Math.min(3000, Number(widthParam) || 1320));
-  const height = Math.max(1200, Math.min(4000, Number(heightParam) || 2868));
-  const density = densityParam === "compact" ? "compact" : "cozy";
-  const layout: Layout =
-    layoutParam === "year" ||
-    layoutParam === "weeks" ||
-    layoutParam === "days-left" ||
-    layoutParam === "months-list"
-      ? layoutParam
-      : "months-3x4";
-  
-  const theme: Theme =
-    themeParam && themeParam in THEMES
-      ? (themeParam as Theme)
-      : "liquid-glass";
+    const width = Math.max(800, Math.min(3000, Number(widthParam) || 1320));
+    const height = Math.max(1200, Math.min(4000, Number(heightParam) || 2868));
+    const density = densityParam === "compact" ? "compact" : "cozy";
+    const layout: Layout =
+      layoutParam === "year" ||
+      layoutParam === "weeks" ||
+      layoutParam === "days-left" ||
+      layoutParam === "months-list"
+        ? layoutParam
+        : "months-3x4";
+    
+    const theme: Theme =
+      themeParam && themeParam in THEMES
+        ? (themeParam as Theme)
+        : "liquid-glass";
 
-  const calendar = getCurrentYearCalendar();
-  const themeConfig = THEMES[theme];
-  const safeArea = getDeviceSafeArea(width, height);
+    const calendar = getCurrentYearCalendar();
+    const themeConfig = THEMES[theme];
+    const safeArea = getDeviceSafeArea(width, height);
 
   // Device-centered padding with safe areas
   const paddingX = Math.max(
@@ -86,73 +89,98 @@ export async function GET(req: NextRequest) {
     "DEC",
   ];
 
-  // Render based on layout
-  if (layout === "months-3x4") {
-    return renderMonths3x4(
-      calendar,
-      width,
-      height,
-      paddingX,
-      paddingY,
-      paddingBottom,
-      contentWidth,
-      contentHeight,
-      density,
-      themeConfig,
-      monthNames
-    );
-  } else if (layout === "months-list") {
-    return renderMonthsList(
-      calendar,
-      width,
-      height,
-      paddingX,
-      paddingY,
-      paddingBottom,
-      contentWidth,
-      contentHeight,
-      density,
-      themeConfig,
-      monthNames
-    );
-  } else if (layout === "year") {
-    return renderYearView(
-      calendar,
-      width,
-      height,
-      paddingX,
-      paddingY,
-      paddingBottom,
-      contentWidth,
-      contentHeight,
-      density,
-      themeConfig
-    );
-  } else if (layout === "weeks") {
-    return renderWeeksView(
-      calendar,
-      width,
-      height,
-      paddingX,
-      paddingY,
-      paddingBottom,
-      contentWidth,
-      contentHeight,
-      density,
-      themeConfig
-    );
-  } else {
-    return renderDaysLeftView(
-      calendar,
-      width,
-      height,
-      paddingX,
-      paddingY,
-      paddingBottom,
-      contentWidth,
-      contentHeight,
-      density,
-      themeConfig
+    // Render based on layout
+    let imageResponse: ImageResponse;
+    
+    if (layout === "months-3x4") {
+      imageResponse = renderMonths3x4(
+        calendar,
+        width,
+        height,
+        paddingX,
+        paddingY,
+        paddingBottom,
+        contentWidth,
+        contentHeight,
+        density,
+        themeConfig,
+        monthNames
+      );
+    } else if (layout === "months-list") {
+      imageResponse = renderMonthsList(
+        calendar,
+        width,
+        height,
+        paddingX,
+        paddingY,
+        paddingBottom,
+        contentWidth,
+        contentHeight,
+        density,
+        themeConfig,
+        monthNames
+      );
+    } else if (layout === "year") {
+      imageResponse = renderYearView(
+        calendar,
+        width,
+        height,
+        paddingX,
+        paddingY,
+        paddingBottom,
+        contentWidth,
+        contentHeight,
+        density,
+        themeConfig
+      );
+    } else if (layout === "weeks") {
+      imageResponse = renderWeeksView(
+        calendar,
+        width,
+        height,
+        paddingX,
+        paddingY,
+        paddingBottom,
+        contentWidth,
+        contentHeight,
+        density,
+        themeConfig
+      );
+    } else {
+      imageResponse = renderDaysLeftView(
+        calendar,
+        width,
+        height,
+        paddingX,
+        paddingY,
+        paddingBottom,
+        contentWidth,
+        contentHeight,
+        density,
+        themeConfig
+      );
+    }
+
+    // Add caching headers - cache for 1 hour, but revalidate every 5 minutes
+    // This helps with performance while keeping the calendar relatively fresh
+    const headers = new Headers(imageResponse.headers);
+    headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
+    headers.set("CDN-Cache-Control", "public, s-maxage=300");
+    headers.set("Vercel-CDN-Cache-Control", "public, s-maxage=300");
+
+    return new Response(imageResponse.body, {
+      status: imageResponse.status,
+      statusText: imageResponse.statusText,
+      headers,
+    });
+  } catch (error) {
+    console.error("Error generating calendar image:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to generate calendar image" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 }

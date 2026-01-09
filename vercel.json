@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/months/route.tsx": {
+      "maxDuration": 30
+    }
+  }
+}
