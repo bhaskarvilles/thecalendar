@@ -25,39 +25,29 @@ export type CalendarYear = {
 export function getCurrentYearCalendar(): CalendarYear {
   const today = new Date();
   const year = today.getFullYear();
-  const todayYear = today.getFullYear();
-  const todayMonth = today.getMonth();
-  const todayDate = today.getDate();
-  const todayTime = new Date(todayYear, todayMonth, todayDate).getTime();
+  const start = new Date(year, 0, 1);
+  const end = new Date(year, 11, 31);
 
   const days: CalendarDay[] = [];
-  const cursor = new Date(year, 0, 1);
+  const cursor = new Date(start);
 
-  // Pre-allocate months array for better performance
-  const months: { month: number; days: CalendarDay[] }[] = Array.from({ length: 12 }, (_, i) => ({
-    month: i,
-    days: [],
-  }));
-
-  while (cursor.getFullYear() === year) {
-    const currentTime = cursor.getTime();
+  while (cursor <= end) {
+    const current = new Date(cursor);
     const isToday =
-      cursor.getFullYear() === todayYear &&
-      cursor.getMonth() === todayMonth &&
-      cursor.getDate() === todayDate;
-    const isPast = currentTime < todayTime;
+      current.getFullYear() === today.getFullYear() &&
+      current.getMonth() === today.getMonth() &&
+      current.getDate() === today.getDate();
 
-    const day: CalendarDay = {
-      date: new Date(cursor),
-      year: cursor.getFullYear(),
-      month: cursor.getMonth(),
-      day: cursor.getDate(),
+    const isPast = current < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    days.push({
+      date: current,
+      year: current.getFullYear(),
+      month: current.getMonth(),
+      day: current.getDate(),
       isToday,
       isPast,
-    };
-
-    days.push(day);
-    months[cursor.getMonth()].days.push(day);
+    });
 
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -66,6 +56,23 @@ export function getCurrentYearCalendar(): CalendarYear {
   const daysGone = days.filter((d) => d.isPast || d.isToday).length;
   const daysLeft = totalDays - daysGone;
 
+  const months = Array.from({ length: 12 }, (_, month) => ({
+    month,
+    days: days.filter((d) => d.month === month),
+  }));
+
+  // Calculate weeks (simple grouping by 7 days)
+  const weeks: CalendarWeek[] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    const weekDays = days.slice(i, i + 7);
+    if (weekDays.length > 0) {
+      weeks.push({
+        weekNumber: Math.floor(i / 7) + 1,
+        days: weekDays,
+      });
+    }
+  }
+
   return {
     year,
     today,
@@ -73,7 +80,7 @@ export function getCurrentYearCalendar(): CalendarYear {
     totalDays,
     daysGone,
     months,
-    weeks: [], // Not used in minimal version
+    weeks,
   };
 }
 
