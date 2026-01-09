@@ -166,15 +166,73 @@ function renderMonths3x4(
   theme: ThemeConfig,
   monthNames: string[]
 ) {
-  const headerHeight = density === "compact" ? 60 : 80;
-  const monthGap = density === "compact" ? 24 : 32;
-  const availableHeight = contentHeight - headerHeight;
-  const monthHeight = (availableHeight - monthGap * 3) / 4;
+  // Optimized: Use 30% top, 40% middle, 30% bottom layout
+  const topSection = height * 0.3;
+  const middleSection = height * 0.4;
+  const bottomSection = height * 0.3;
+  
+  const monthGap = density === "compact" ? 20 : 28;
+  const monthHeight = (middleSection - monthGap * 3) / 4;
   const monthWidth = (contentWidth - monthGap * 2) / 3;
-  const daySize = Math.min(monthWidth / 8, monthHeight / 7);
-  const dayGap = density === "compact" ? 4 : 6;
-  const fontSize = Math.max(daySize * 0.5, 16); // Much larger font size
+  const daySize = Math.min(monthWidth / 7.5, monthHeight / 6.5);
+  const dayGap = density === "compact" ? 6 : 8;
+  const fontSize = Math.max(daySize * 0.65, 24);
 
+  // Optimized: Use solid background instead of gradient for faster rendering
+  const bgColor = theme.background;
+  
+  // Pre-calculate styles to avoid repeated calculations
+  const headerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${topSection}px`,
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+  };
+
+  const headerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  };
+
+  const yearTextStyle = {
+    display: "flex" as const,
+    fontSize: Math.max(width * 0.045, 52),
+    fontWeight: 600,
+    color: theme.textColor,
+    letterSpacing: 4,
+  };
+
+  const daysLeftStyle = {
+    display: "flex" as const,
+    fontSize: Math.max(width * 0.018 * 1.3, 22),
+    fontWeight: 500,
+            color: "#ff0000",
+    letterSpacing: 1,
+  };
+
+  const monthsGridStyle = {
+    display: "flex" as const,
+    flexWrap: "wrap" as const,
+    gap: monthGap,
+    justifyContent: "center" as const,
+    alignItems: "flex-start" as const,
+    position: "absolute" as const,
+    top: `${topSection}px`,
+    left: `${paddingX}px`,
+    width: `${contentWidth}px`,
+    height: `${middleSection}px`,
+  };
+  
   return new ImageResponse(
     (
       <div
@@ -182,98 +240,117 @@ function renderMonths3x4(
           width,
           height,
           display: "flex",
-          flexDirection: "column",
-          padding: `${paddingY}px ${paddingX}px ${paddingBottom}px ${paddingX}px`,
-          background: theme.background,
+          position: "relative",
+          background: bgColor,
           color: theme.textColor,
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Minimal Header - Text Only */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: 32,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 36,
-                fontWeight: 400,
-                color: theme.textColor,
-                letterSpacing: 2,
-              }}
-            >
+        {/* Header in top 30% */}
+        <div style={headerStyle}>
+          <div style={headerBoxStyle}>
+            <div style={yearTextStyle}>
               {calendar.year}
             </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 16,
-                fontWeight: 400,
-                color: theme.textColor,
-              }}
-            >
+            <div style={daysLeftStyle}>
               {calendar.daysLeft} days left
             </div>
           </div>
         </div>
 
-        {/* 3x4 Grid - Text Only */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: monthGap,
-            flex: 1,
-          }}
-        >
-          {calendar.months.map((monthBlock) => {
+        {/* Months grid in middle 40% */}
+        <div style={monthsGridStyle}>
+          {calendar.months.map((monthBlock, monthIdx) => {
             const firstWeekday = new Date(
               calendar.year,
               monthBlock.month,
               1
             ).getDay();
 
+            // Pre-calculate styles for this month
+            const monthContainerStyle = {
+              display: "flex" as const,
+              flexDirection: "column" as const,
+              width: monthWidth,
+              height: monthHeight,
+              gap: 10,
+              padding: "12px",
+              background: "rgba(0, 0, 0, 0.4)",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+            };
+
+            const monthLabelStyle = {
+              display: "flex" as const,
+              fontSize: Math.max(fontSize * 0.8, 20),
+              fontWeight: 600,
+              color: theme.textColor,
+              letterSpacing: 2,
+              padding: "4px 12px",
+              background: "rgba(255, 255, 255, 0.05)",
+              borderRadius: "8px",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+            };
+
             const boxes: React.ReactNode[] = [];
             
-            // Empty boxes for days before month starts
+            // Optimized: Empty boxes
             for (let i = 0; i < firstWeekday; i++) {
               boxes.push(
                 <div
-                  key={`empty-${monthBlock.month}-${i}`}
-                  style={{
-                    width: daySize,
-                    height: daySize,
-                  }}
+                  key={`e-${monthIdx}-${i}`}
+                  style={{ width: daySize, height: daySize }}
                 />
               );
             }
 
-            // Day boxes
+            // Optimized: Day boxes - simplified styling
             for (const d of monthBlock.days) {
               const isToday = d.isToday;
-              boxes.push(
-                <div
-                  key={d.date.toISOString()}
-                  style={{
-                    display: "flex",
-                    width: daySize,
-                    height: daySize,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: fontSize,
-                    fontWeight: isToday ? 600 : 400,
-                    color: theme.textColor,
-                  }}
-                >
-                  {isToday ? `${d.day}*` : d.day}
-                </div>
-              );
+              const dayKey = `d-${monthIdx}-${d.day}`;
+              
+              if (isToday) {
+                boxes.push(
+                  <div
+                    key={dayKey}
+                    style={{
+                      display: "flex",
+                      width: daySize,
+                      height: daySize,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: fontSize * 1.3,
+                      fontWeight: 700,
+                      color: "#ffffff",
+                      background: "#ff0000",
+                      borderRadius: "50%",
+                      border: "2px solid #ff0000",
+                    }}
+                  >
+                    {d.day}
+                  </div>
+                );
+              } else {
+                boxes.push(
+                  <div
+                    key={dayKey}
+                    style={{
+                      display: "flex",
+                      width: daySize,
+                      height: daySize,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: fontSize * 0.75,
+                      fontWeight: 400,
+                      color: "#a1a1aa",
+                      borderRadius: "50%",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
+                    }}
+                  >
+                    •
+                  </div>
+                );
+              }
             }
 
             // Group into weeks (7 days per row)
@@ -285,23 +362,9 @@ function renderMonths3x4(
             return (
               <div
                 key={monthBlock.month}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  width: monthWidth,
-                  height: monthHeight,
-                  gap: 8,
-                }}
+                style={monthContainerStyle}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    fontSize: Math.max(fontSize * 0.7, 14),
-                    fontWeight: 500,
-                    color: theme.textColor,
-                    letterSpacing: 1,
-                  }}
-                >
+                <div style={monthLabelStyle}>
                   {monthNames[monthBlock.month]}
                 </div>
                 <div
@@ -348,11 +411,49 @@ function renderMonthsList(
   theme: ThemeConfig,
   monthNames: string[]
 ) {
-  const headerHeight = density === "compact" ? 80 : 96;
-  const monthGap = density === "compact" ? 10 : 16;
-  const monthHeight = (contentHeight - headerHeight - monthGap * 11) / 12;
+  // 30-30-40 layout
+  const topSection = height * 0.3;
+  const middleSection = height * 0.4;
+  const bottomSection = height * 0.3;
+  
+  const monthGap = density === "compact" ? 8 : 12;
+  const monthHeight = (middleSection - monthGap * 11) / 12;
   const daySize = monthHeight / 6;
-  const dayGap = density === "compact" ? daySize * 0.12 : daySize * 0.2;
+  const dayGap = density === "compact" ? daySize * 0.1 : daySize * 0.15;
+
+  // Pre-calculate styles
+  const headerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${topSection}px`,
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+  };
+
+  const headerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  };
+
+  const monthsListStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: monthGap,
+    position: "absolute" as const,
+    top: `${topSection}px`,
+    left: `${paddingX}px`,
+    width: `${contentWidth}px`,
+    height: `${middleSection}px`,
+  };
 
   return new ImageResponse(
     (
@@ -361,107 +462,27 @@ function renderMonthsList(
           width,
           height,
           display: "flex",
-          flexDirection: "column",
-          padding: `${paddingY}px ${paddingX}px ${paddingBottom}px ${paddingX}px`,
+          position: "relative",
           background: theme.background,
           color: theme.textColor,
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          position: "relative",
+          fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 28,
-                fontWeight: 700,
-                letterSpacing: 8,
-              }}
-            >
+        {/* Header in top 30% */}
+        <div style={headerStyle}>
+          <div style={headerBoxStyle}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52), fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
               {calendar.year}
             </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 20,
-                opacity: 0.7,
-              }}
-            >
-              {calendar.today.toLocaleDateString(undefined, {
-                month: "long",
-                day: "numeric",
-                weekday: "short",
-              })}
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 6,
-              fontSize: 18,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                fontWeight: 600,
-              }}
-            >
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22), fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
               {calendar.daysLeft} days left
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 16,
-                opacity: 0.7,
-              }}
-            >
-              {calendar.daysGone} gone · {calendar.totalDays} total
-            </div>
-            <div
-              style={{
-                display: "flex",
-                width: 220,
-                height: 6,
-                borderRadius: 999,
-                background: "rgba(255,255,255,0.08)",
-                overflow: "hidden",
-                marginTop: 4,
-              }}
-            >
-              <div
-                style={{
-                  width: `${(calendar.daysGone / calendar.totalDays) * 100}%`,
-                  height: "100%",
-                  background:
-                    "linear-gradient(90deg, #22c55e, #a3e635, #fde047)",
-                }}
-              />
             </div>
           </div>
         </div>
 
-        {/* Months list */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: monthGap,
-            flex: 1,
-          }}
-        >
-          {calendar.months.map((monthBlock) => {
+        {/* Months list in middle 40% */}
+        <div style={monthsListStyle}>
+          {calendar.months.map((monthBlock, monthIdx) => {
             const firstWeekday = new Date(
               calendar.year,
               monthBlock.month,
@@ -471,44 +492,56 @@ function renderMonthsList(
             const boxes: React.ReactNode[] = [];
             for (let i = 0; i < firstWeekday; i++) {
               boxes.push(
-                <div
-                  key={`empty-${monthBlock.month}-${i}`}
-                  style={{
-                    width: daySize,
-                    height: daySize,
-                  }}
-                />
+                <div key={`e-${monthIdx}-${i}`} style={{ width: daySize, height: daySize }} />
               );
             }
 
             for (const d of monthBlock.days) {
-              const baseOpacity = d.isPast ? 0.18 : 0.45;
               const isToday = d.isToday;
-
-              boxes.push(
-                <div
-                  key={d.date.toISOString()}
-                  style={{
-                    width: daySize,
-                    height: daySize,
-                    borderRadius: 6,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: daySize * 0.4,
-                    fontWeight: isToday ? 700 : 500,
-                    background: isToday
-                      ? "linear-gradient(135deg, #22c55e, #a3e635)"
-                      : `rgba(255,255,255,${baseOpacity})`,
-                    color: isToday ? "#020617" : "rgba(15,23,42,0.9)",
-                    boxShadow: isToday
-                      ? "0 0 0 2px rgba(34,197,94,0.4), 0 18px 45px rgba(34,197,94,0.45)"
-                      : "none",
-                  }}
-                >
-                  {d.day}
-                </div>
-              );
+              const dayKey = `d-${monthIdx}-${d.day}`;
+              
+              if (isToday) {
+                boxes.push(
+                  <div
+                    key={dayKey}
+                    style={{
+                      width: daySize,
+                      height: daySize,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: daySize * 0.5,
+                      fontWeight: 700,
+                      color: "#ffffff",
+                      background: "#ff0000",
+                      border: "2px solid #ff0000",
+                    }}
+                  >
+                    {d.day}
+                  </div>
+                );
+              } else {
+                boxes.push(
+                  <div
+                    key={dayKey}
+                    style={{
+                      width: daySize,
+                      height: daySize,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: daySize * 0.4,
+                      fontWeight: 400,
+                      color: "#a1a1aa",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
+                    }}
+                  >
+                    •
+                  </div>
+                );
+              }
             }
 
             return (
@@ -518,20 +551,20 @@ function renderMonthsList(
                   display: "flex",
                   flexDirection: "row",
                   alignItems: "flex-start",
-                  gap: 24,
+                  gap: 20,
                   height: monthHeight,
                 }}
               >
                 <div
                   style={{
                     display: "flex",
-                    width: 120,
-                    fontSize: 18,
+                    width: 100,
+                    fontSize: 16,
                     fontWeight: 600,
-                    opacity: 0.8,
+                    color: theme.textColor,
                   }}
                 >
-                  {monthNames[monthBlock.month].toUpperCase()}
+                  {monthNames[monthBlock.month]}
                 </div>
                 <div
                   style={{
@@ -566,10 +599,47 @@ function renderYearView(
   density: string,
   theme: ThemeConfig
 ) {
-  const headerHeight = density === "compact" ? 100 : 120;
-  const availableHeight = contentHeight - headerHeight;
-  const daySize = Math.min(availableHeight / 53, contentWidth / 53); // 53 weeks max
+  // 30-30-40 layout
+  const topSection = height * 0.3;
+  const middleSection = height * 0.4;
+  const bottomSection = height * 0.3;
+  
+  const daySize = Math.min(middleSection / 53, contentWidth / 53);
   const gap = density === "compact" ? 2 : 3;
+
+  const headerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${topSection}px`,
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+  };
+
+  const headerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  };
+
+  const yearGridStyle = {
+    display: "flex" as const,
+    flexWrap: "wrap" as const,
+    gap,
+    justifyContent: "center" as const,
+    position: "absolute" as const,
+    top: `${topSection}px`,
+    left: `${paddingX}px`,
+    width: `${contentWidth}px`,
+    height: `${middleSection}px`,
+  };
 
   return new ImageResponse(
     (
@@ -578,105 +648,58 @@ function renderYearView(
           width,
           height,
           display: "flex",
-          flexDirection: "column",
-          padding: `${paddingY}px ${paddingX}px ${paddingBottom}px ${paddingX}px`,
+          position: "relative",
           background: theme.background,
           color: theme.textColor,
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          position: "relative",
+          fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 36,
-                fontWeight: 700,
-                letterSpacing: 12,
-              }}
-            >
+        {/* Header in top 30% */}
+        <div style={headerStyle}>
+          <div style={headerBoxStyle}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52), fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
               {calendar.year}
             </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 22,
-                opacity: 0.7,
-              }}
-            >
-              Year Overview
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 6,
-              fontSize: 20,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                fontWeight: 600,
-              }}
-            >
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22), fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
               {calendar.daysLeft} days left
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 18,
-                opacity: 0.7,
-              }}
-            >
-              {calendar.daysGone} gone · {calendar.totalDays} total
             </div>
           </div>
         </div>
 
-        {/* Year grid - all days */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap,
-            justifyContent: "center",
-            flex: 1,
-          }}
-        >
-          {calendar.months.flatMap((m) => m.days).map((d) => {
-            const baseOpacity = d.isPast ? 0.15 : 0.4;
+        {/* Year grid in middle 40% */}
+        <div style={yearGridStyle}>
+          {calendar.months.flatMap((m, mIdx) => m.days.map((d, dIdx) => {
             const isToday = d.isToday;
+            const dayKey = `y-${mIdx}-${dIdx}`;
 
-            return (
-              <div
-                key={d.date.toISOString()}
-                style={{
-                  width: daySize,
-                  height: daySize,
-                  borderRadius: 3,
-                  display: "flex",
-                  background: isToday
-                    ? "linear-gradient(135deg, #22c55e, #a3e635)"
-                    : `rgba(255,255,255,${baseOpacity})`,
-                  boxShadow: isToday
-                    ? "0 0 0 2px rgba(34,197,94,0.5), 0 4px 12px rgba(34,197,94,0.4)"
-                    : "none",
-                }}
-              />
-            );
-          })}
+            if (isToday) {
+              return (
+                <div
+                  key={dayKey}
+                  style={{
+                    width: daySize,
+                    height: daySize,
+                    borderRadius: "50%",
+                    background: "#ff0000",
+                    border: "2px solid #ff0000",
+                  }}
+                />
+              );
+            } else {
+              return (
+                <div
+                  key={dayKey}
+                  style={{
+                    width: daySize,
+                    height: daySize,
+                    borderRadius: "50%",
+                    background: d.isPast ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.4)",
+                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                  }}
+                />
+              );
+            }
+          }))}
         </div>
       </div>
     ),
@@ -696,11 +719,48 @@ function renderWeeksView(
   density: string,
   theme: ThemeConfig
 ) {
-  const headerHeight = density === "compact" ? 80 : 96;
-  const weekGap = density === "compact" ? 4 : 6;
-  const availableHeight = contentHeight - headerHeight;
-  const weekHeight = (availableHeight - weekGap * (calendar.weeks.length - 1)) / calendar.weeks.length;
+  // 30-30-40 layout
+  const topSection = height * 0.3;
+  const middleSection = height * 0.4;
+  const bottomSection = height * 0.3;
+  
+  const weekGap = density === "compact" ? 3 : 4;
+  const weekHeight = (middleSection - weekGap * (calendar.weeks.length - 1)) / calendar.weeks.length;
   const dayWidth = (contentWidth - weekGap * 6) / 7;
+
+  const headerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${topSection}px`,
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+  };
+
+  const headerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  };
+
+  const weeksListStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: weekGap,
+    position: "absolute" as const,
+    top: `${topSection}px`,
+    left: `${paddingX}px`,
+    width: `${contentWidth}px`,
+    height: `${middleSection}px`,
+    overflow: "hidden" as const,
+  };
 
   return new ImageResponse(
     (
@@ -709,86 +769,29 @@ function renderWeeksView(
           width,
           height,
           display: "flex",
-          flexDirection: "column",
-          padding: `${paddingY}px ${paddingX}px ${paddingBottom}px ${paddingX}px`,
+          position: "relative",
           background: theme.background,
           color: theme.textColor,
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          position: "relative",
+          fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 28,
-                fontWeight: 700,
-                letterSpacing: 8,
-              }}
-            >
-              {calendar.year} - Weeks
+        {/* Header in top 30% */}
+        <div style={headerStyle}>
+          <div style={headerBoxStyle}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52), fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
+              {calendar.year}
             </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 18,
-                opacity: 0.7,
-              }}
-            >
-              {calendar.weeks.length} weeks
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 4,
-              fontSize: 16,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                fontWeight: 600,
-              }}
-            >
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22), fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
               {calendar.daysLeft} days left
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 14,
-                opacity: 0.7,
-              }}
-            >
-              Week {Math.floor(calendar.daysGone / 7) + 1}
             </div>
           </div>
         </div>
 
-        {/* Weeks */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: weekGap,
-            flex: 1,
-            overflow: "hidden",
-          }}
-        >
-          {calendar.weeks.map((week, idx) => (
+        {/* Weeks in middle 40% */}
+        <div style={weeksListStyle}>
+          {calendar.weeks.map((week, weekIdx) => (
             <div
-              key={idx}
+              key={weekIdx}
               style={{
                 display: "flex",
                 flexDirection: "row",
@@ -796,51 +799,55 @@ function renderWeeksView(
                 height: weekHeight,
               }}
             >
-              {week.days.map((d) => {
-                const baseOpacity = d.isPast ? 0.18 : 0.45;
+              {week.days.map((d, dayIdx) => {
                 const isToday = d.isToday;
+                const dayKey = `w-${weekIdx}-${dayIdx}`;
 
-                return (
-                  <div
-                    key={d.date.toISOString()}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      width: dayWidth,
-                      height: weekHeight,
-                      borderRadius: 4,
-                      background: isToday
-                        ? "linear-gradient(135deg, #22c55e, #a3e635)"
-                        : `rgba(255,255,255,${baseOpacity})`,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: weekHeight * 0.25,
-                      fontWeight: isToday ? 700 : 500,
-                      color: isToday ? "#020617" : "rgba(255,255,255,0.9)",
-                      boxShadow: isToday
-                        ? "0 0 0 2px rgba(34,197,94,0.4), 0 4px 12px rgba(34,197,94,0.3)"
-                        : "none",
-                    }}
-                  >
+                if (isToday) {
+                  return (
                     <div
+                      key={dayKey}
                       style={{
                         display: "flex",
-                        fontSize: weekHeight * 0.15,
-                        opacity: 0.7,
-                        marginBottom: 2,
-                      }}
-                    >
-                      {d.date.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase()}
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
+                        flexDirection: "column",
+                        width: dayWidth,
+                        height: weekHeight,
+                        borderRadius: "8px",
+                        background: "#ff0000",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: weekHeight * 0.3,
+                        fontWeight: 700,
+                        color: "#ffffff",
+                        border: "2px solid #ff0000",
                       }}
                     >
                       {d.day}
                     </div>
-                  </div>
-                );
+                  );
+                } else {
+                  return (
+                    <div
+                      key={dayKey}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        width: dayWidth,
+                        height: weekHeight,
+                        borderRadius: "8px",
+                        background: d.isPast ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.45)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: weekHeight * 0.25,
+                        fontWeight: 500,
+                        color: "#ffffff",
+                        border: "1px solid rgba(255, 255, 255, 0.05)",
+                      }}
+                    >
+                      {d.day}
+                    </div>
+                  );
+                }
               })}
             </div>
           ))}
@@ -863,17 +870,54 @@ function renderDaysLeftView(
   density: string,
   theme: ThemeConfig
 ) {
-  const headerHeight = density === "compact" ? 120 : 140;
-  const availableHeight = contentHeight - headerHeight;
+  // 30-30-40 layout
+  const topSection = height * 0.3;
+  const middleSection = height * 0.4;
+  const bottomSection = height * 0.3;
+  
   const remainingDays = calendar.months
     .flatMap((m) => m.days)
     .filter((d) => !d.isPast && !d.isToday);
   
   const daySize = Math.min(
-    Math.sqrt((availableHeight * contentWidth) / remainingDays.length) * 0.9,
+    Math.sqrt((middleSection * contentWidth) / remainingDays.length) * 0.9,
     40
   );
   const gap = density === "compact" ? 4 : 6;
+
+  const headerStyle = {
+    display: "flex" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    width: "100%",
+    height: `${topSection}px`,
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+  };
+
+  const headerBoxStyle = {
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    gap: 12,
+    alignItems: "center" as const,
+    padding: "20px 32px",
+    background: "rgba(0, 0, 0, 0.8)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+  };
+
+  const daysGridStyle = {
+    display: "flex" as const,
+    flexWrap: "wrap" as const,
+    gap,
+    justifyContent: "center" as const,
+    position: "absolute" as const,
+    top: `${topSection}px`,
+    left: `${paddingX}px`,
+    width: `${contentWidth}px`,
+    height: `${middleSection}px`,
+  };
 
   return new ImageResponse(
     (
@@ -882,131 +926,58 @@ function renderDaysLeftView(
           width,
           height,
           display: "flex",
-          flexDirection: "column",
-          padding: `${paddingY}px ${paddingX}px ${paddingBottom}px ${paddingX}px`,
+          position: "relative",
           background: theme.background,
           color: theme.textColor,
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          position: "relative",
+          fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginBottom: 24,
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              fontSize: 48,
-              fontWeight: 700,
-              letterSpacing: 12,
-            }}
-          >
-            {calendar.daysLeft}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 24,
-              fontWeight: 600,
-              opacity: 0.9,
-            }}
-          >
-            DAYS LEFT IN {calendar.year}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 18,
-              opacity: 0.7,
-            }}
-            >
-            {calendar.today.toLocaleDateString(undefined, {
-              month: "long",
-              day: "numeric",
-              weekday: "long",
-            })}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              width: Math.min(contentWidth * 0.6, 400),
-              height: 8,
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.1)",
-              overflow: "hidden",
-              marginTop: 8,
-            }}
-          >
-            <div
-              style={{
-                width: `${(calendar.daysGone / calendar.totalDays) * 100}%`,
-                height: "100%",
-                background:
-                  "linear-gradient(90deg, #22c55e, #a3e635, #fde047)",
-              }}
-            />
+        {/* Header in top 30% */}
+        <div style={headerStyle}>
+          <div style={headerBoxStyle}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.08, 64), fontWeight: 700, color: "#ff0000", letterSpacing: 4 }}>
+              {calendar.daysLeft}
+            </div>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.025, 28), fontWeight: 600, color: theme.textColor, letterSpacing: 2 }}>
+              DAYS LEFT IN {calendar.year}
+            </div>
           </div>
         </div>
 
-        {/* Remaining days grid */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap,
-            justifyContent: "center",
-            flex: 1,
-          }}
-        >
-          {remainingDays.map((d) => {
+        {/* Remaining days grid in middle 40% */}
+        <div style={daysGridStyle}>
+          {remainingDays.map((d, idx) => {
             const daysUntil = Math.ceil(
               (d.date.getTime() - calendar.today.getTime()) / (1000 * 60 * 60 * 24)
             );
+            const dayKey = `dl-${idx}`;
 
             return (
               <div
-                key={d.date.toISOString()}
+                key={dayKey}
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   width: daySize,
                   height: daySize,
-                  borderRadius: 4,
+                  borderRadius: "8px",
                   background: "rgba(255,255,255,0.12)",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: daySize * 0.35,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.9)",
+                  color: "#ffffff",
                   border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    fontSize: daySize * 0.2,
-                    opacity: 0.6,
-                    marginBottom: 2,
-                  }}
-                >
+                <div style={{ display: "flex", fontSize: daySize * 0.25, opacity: 0.8 }}>
                   {d.month + 1}/{d.day}
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    fontSize: daySize * 0.15,
-                    opacity: 0.5,
-                  }}
-                >
-                  {daysUntil > 0 ? `+${daysUntil}` : ""}
-                </div>
+                {daysUntil > 0 && (
+                  <div style={{ display: "flex", fontSize: daySize * 0.2, color: "#ff0000", opacity: 0.9 }}>
+                    +{daysUntil}
+                  </div>
+                )}
               </div>
             );
           })}
