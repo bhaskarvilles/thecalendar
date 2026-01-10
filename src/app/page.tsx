@@ -22,9 +22,18 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Copy, Check, Smartphone, Tablet, Settings, HelpCircle, ExternalLink, Sparkles, Calendar, Zap, BookOpen, Moon, Sun } from "lucide-react";
+import { Copy, Check, Smartphone, Tablet, Settings, HelpCircle, ExternalLink, Sparkles, Calendar, Zap, BookOpen, Moon, Sun, QrCode, Download } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -40,20 +49,18 @@ type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "d
 export default function Home() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [origin, setOrigin] = useState<string>("");
 
-  const [origin] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return window.location.origin;
-    }
-    return "https://your-domain.com";
-  });
   const [deviceId, setDeviceId] = useState<string>("iphone-16-pro-max");
   const [density, setDensity] = useState<Density>("cozy");
   const [layout, setLayout] = useState<Layout>("months-3x4");
   const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    setOrigin(window.location.origin);
   }, []);
 
   const device = useMemo(
@@ -81,6 +88,33 @@ export default function Home() {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      const response = await fetch(wallpaperUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calendar-wallpaper-${device.label.replace(/\s+/g, '-').toLowerCase()}-${layout}.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Quick device presets
+  const quickPresets = [
+    { id: "iphone-16-pro-max", label: "iPhone 16 Pro Max" },
+    { id: "iphone-15-pro", label: "iPhone 15 Pro" },
+    { id: "iphone-14-pro", label: "iPhone 14 Pro" },
+  ];
+
   const iphones = DEVICE_PRESETS.filter((d) => d.family === "iphone");
   const ipads = DEVICE_PRESETS.filter((d) => d.family === "ipad");
 
@@ -91,21 +125,21 @@ export default function Home() {
         <header className="mb-4 sm:mb-6 flex flex-col gap-3 sm:gap-4 md:mb-8">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-3 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <Badge variant="outline" className="border-red-500/50 text-red-400">
-                  <Sparkles className="size-3 mr-1" />
+              <div className="flex items-center gap-3 flex-wrap animate-in fade-in slide-in-from-bottom-2 duration-700">
+                <Badge variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500/70 transition-all duration-300 hover:scale-105 cursor-default">
+                  <Sparkles className="size-3 mr-1 animate-pulse" />
                   Auto-Update Daily
                 </Badge>
-                <Badge variant="secondary" className="bg-red-500/10 text-red-300 border-red-500/20">
+                <Badge variant="secondary" className="bg-red-500/10 text-red-300 border-red-500/20 hover:bg-red-500/15 hover:border-red-500/30 transition-all duration-300 hover:scale-105 cursor-default">
                   <Calendar className="size-3 mr-1" />
                   {new Date().getFullYear()} Calendar
                 </Badge>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold tracking-tight md:text-5xl text-foreground mb-2">
+              <div className="space-y-2">
+                <h1 className="text-4xl font-bold tracking-tight md:text-5xl mb-2 bg-gradient-to-r from-foreground via-foreground to-red-500 bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-3 duration-700">
                   Minimal Calendar Wallpaper
                 </h1>
-                <p className="text-base text-muted-foreground max-w-2xl">
+                <p className="text-base text-muted-foreground max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
                   Generate a pitch-black calendar wallpaper that updates daily. Perfect for iOS lock screens with Shortcuts automation.
                 </p>
               </div>
@@ -298,7 +332,7 @@ export default function Home() {
             </div>
           </div>
 
-          <Alert className="border-red-500/20 bg-red-500/5">
+          <Alert className="border-red-500/20 bg-red-500/5 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300 hover:border-red-500/30 hover:bg-red-500/10 transition-all duration-300">
             <Zap className="size-4 text-red-400" />
             <AlertTitle className="text-red-300">Minimal Design</AlertTitle>
             <AlertDescription className="text-red-200/80">
@@ -308,13 +342,13 @@ export default function Home() {
         </header>
 
         {/* Main Content with Tabs */}
-        <Tabs defaultValue="builder" className="w-full">
+        <Tabs defaultValue="builder" className="w-full animate-in fade-in duration-700 delay-500">
           <TabsList className="grid w-full max-w-md grid-cols-2 mb-4 sm:mb-6 bg-muted border-border">
-            <TabsTrigger value="builder" className="gap-2">
+            <TabsTrigger value="builder" className="gap-2 data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400 transition-all duration-300">
               <Settings className="size-4" />
               Builder & Guide
             </TabsTrigger>
-            <TabsTrigger value="preview" className="gap-2">
+            <TabsTrigger value="preview" className="gap-2 data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400 transition-all duration-300">
               <ExternalLink className="size-4" />
               Preview
             </TabsTrigger>
@@ -322,13 +356,13 @@ export default function Home() {
 
           {/* Builder Tab */}
           <TabsContent value="builder" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-6 lg:grid-cols-2">
               {/* Main Configuration */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card className="border-border bg-card backdrop-blur">
+              <div className="space-y-6">
+                <Card className="border-border bg-card backdrop-blur hover:border-red-500/20 transition-all duration-500 hover:shadow-lg hover:shadow-red-500/5">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Settings className="size-5" />
+                      <Settings className="size-5 text-red-400" />
                       Configuration
                     </CardTitle>
                     <CardDescription>
@@ -387,6 +421,25 @@ export default function Home() {
                         </Tooltip>
                         Portrait dimensions optimized for lock screen
                       </p>
+
+                      {/* Quick Device Switcher */}
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Label className="text-xs text-muted-foreground w-full">Quick Select:</Label>
+                        {quickPresets.map((preset) => (
+                          <Button
+                            key={preset.id}
+                            variant={deviceId === preset.id ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setDeviceId(preset.id)}
+                            className={`text-xs h-7 transition-all duration-300 ${deviceId === preset.id
+                              ? "bg-red-500 hover:bg-red-600 text-white"
+                              : "hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400"
+                              }`}
+                          >
+                            {preset.label}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
 
                     <Separator className="bg-border" />
@@ -477,9 +530,12 @@ export default function Home() {
                 </Card>
 
                 {/* URL Output */}
-                <Card className="border-border bg-card/50">
+                <Card className="border-border bg-card/50 hover:border-red-500/20 transition-all duration-500 hover:shadow-lg hover:shadow-red-500/5">
                   <CardHeader>
-                    <CardTitle className="text-base">Wallpaper URL</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Copy className="size-4 text-red-400" />
+                      Wallpaper URL
+                    </CardTitle>
                     <CardDescription className="text-xs">
                       Copy this URL for your Shortcuts automation
                     </CardDescription>
@@ -500,9 +556,9 @@ export default function Home() {
                               variant="outline"
                               size="icon"
                               onClick={handleCopy}
-                              className="border-red-400/60 hover:bg-red-500/15"
+                              className="border-red-400/60 hover:bg-red-500/15 transition-all duration-300 hover:scale-110 active:scale-95"
                             >
-                              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                              {copied ? <Check className="size-4 text-green-500 animate-in zoom-in duration-300" /> : <Copy className="size-4" />}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -528,14 +584,148 @@ export default function Home() {
                         <Badge variant="outline">{density}</Badge>
                       </div>
                     </div>
+
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* QR Code Dialog */}
+                      <Dialog open={showQR} onOpenChange={setShowQR}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 transition-all duration-300 group"
+                          >
+                            <QrCode className="size-4 mr-2 group-hover:scale-110 transition-transform duration-300" />
+                            QR Code
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <QrCode className="size-5 text-red-400" />
+                              Scan QR Code
+                            </DialogTitle>
+                            <DialogDescription>
+                              Scan this QR code with your phone to quickly access the wallpaper URL
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="flex items-center justify-center p-6 bg-white rounded-lg">
+                            <QRCodeSVG
+                              value={wallpaperUrl}
+                              size={256}
+                              level="H"
+                              includeMargin={true}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => setShowQR(false)}
+                            >
+                              Close
+                            </Button>
+                            <Button
+                              variant="default"
+                              className="flex-1 bg-red-500 hover:bg-red-600"
+                              onClick={handleCopy}
+                            >
+                              {copied ? <Check className="size-4 mr-2" /> : <Copy className="size-4 mr-2" />}
+                              {copied ? "Copied!" : "Copy URL"}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* Download Button */}
+                      <Button
+                        variant="outline"
+                        onClick={handleDownload}
+                        disabled={downloading}
+                        className="hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 transition-all duration-300 group"
+                      >
+                        <Download className={`size-4 mr-2 ${downloading ? 'animate-bounce' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                        {downloading ? "Downloading..." : "Download"}
+                      </Button>
+                    </div>
+
                     <Button
-                      className="w-full"
+                      className="w-full hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 transition-all duration-300 group"
                       onClick={() => window.open(wallpaperUrl, "_blank")}
                       variant="outline"
                     >
-                      <ExternalLink className="size-4 mr-2" />
+                      <ExternalLink className="size-4 mr-2 group-hover:rotate-12 transition-transform duration-300" />
                       Preview in New Tab
                     </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Live Preview - Desktop Only (hidden on mobile/tablet) */}
+              <div className="hidden lg:block space-y-6">
+                <Card className="border-border bg-card sticky top-6 hover:border-red-500/20 transition-all duration-500">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <ExternalLink className="size-4 text-red-400" />
+                      Live Preview
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Real-time preview of your wallpaper
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* iPhone Device Frame */}
+                    <div className="relative mx-auto" style={{ width: '280px' }}>
+                      {/* Device outer frame */}
+                      <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] p-3 shadow-2xl">
+                        {/* Device screen bezel */}
+                        <div className="relative bg-black rounded-[2.5rem] overflow-hidden">
+                          {/* Notch */}
+                          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-40 h-7 bg-black rounded-b-3xl flex items-center justify-center">
+                            <div className="w-16 h-1.5 bg-gray-900 rounded-full"></div>
+                          </div>
+
+                          {/* Screen content */}
+                          <div className="relative aspect-[9/19.5] bg-black overflow-hidden">
+                            <div className="w-full h-full" style={{
+                              transform: `scale(${280 / device.width})`,
+                              transformOrigin: 'top left',
+                              width: `${device.width}px`,
+                              height: `${device.height}px`,
+                            }}>
+                              <iframe
+                                key={wallpaperUrl}
+                                src={wallpaperUrl}
+                                className="w-full h-full border-0"
+                                title="Calendar Preview"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Side buttons */}
+                        <div className="absolute -left-1 top-24 w-1 h-8 bg-gray-700 rounded-l"></div>
+                        <div className="absolute -left-1 top-36 w-1 h-12 bg-gray-700 rounded-l"></div>
+                        <div className="absolute -left-1 top-52 w-1 h-12 bg-gray-700 rounded-l"></div>
+                        <div className="absolute -right-1 top-32 w-1 h-16 bg-gray-700 rounded-r"></div>
+                      </div>
+
+                      {/* Device label */}
+                      <div className="text-center mt-3 text-xs text-muted-foreground">
+                        {device.label}
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => window.open(wallpaperUrl, "_blank")}
+                        variant="outline"
+                        className="w-full hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 transition-all duration-300 group"
+                        size="sm"
+                      >
+                        <ExternalLink className="size-3 mr-2 group-hover:rotate-12 transition-transform duration-300" />
+                        Open Full Size
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -555,13 +745,47 @@ export default function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="relative aspect-[9/19.5] w-full max-w-[280px] sm:max-w-sm mx-auto bg-background rounded-2xl overflow-hidden border-4 border-border shadow-2xl">
-                  <iframe
-                    src={wallpaperUrl}
-                    className="w-full h-full border-0"
-                    title="Calendar Preview"
-                  />
+                {/* iPhone Device Frame */}
+                <div className="relative mx-auto" style={{ width: '280px' }}>
+                  {/* Device outer frame */}
+                  <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] p-3 shadow-2xl">
+                    {/* Device screen bezel */}
+                    <div className="relative bg-black rounded-[2.5rem] overflow-hidden">
+                      {/* Notch */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-40 h-7 bg-black rounded-b-3xl flex items-center justify-center">
+                        <div className="w-16 h-1.5 bg-gray-900 rounded-full"></div>
+                      </div>
+
+                      {/* Screen content */}
+                      <div className="relative aspect-[9/19.5] bg-black overflow-hidden">
+                        <div className="w-full h-full" style={{
+                          transform: `scale(${280 / device.width})`,
+                          transformOrigin: 'top left',
+                          width: `${device.width}px`,
+                          height: `${device.height}px`,
+                        }}>
+                          <iframe
+                            src={wallpaperUrl}
+                            className="w-full h-full border-0"
+                            title="Calendar Preview"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Side buttons */}
+                    <div className="absolute -left-1 top-24 w-1 h-8 bg-gray-700 rounded-l"></div>
+                    <div className="absolute -left-1 top-36 w-1 h-12 bg-gray-700 rounded-l"></div>
+                    <div className="absolute -left-1 top-52 w-1 h-12 bg-gray-700 rounded-l"></div>
+                    <div className="absolute -right-1 top-32 w-1 h-16 bg-gray-700 rounded-r"></div>
+                  </div>
+
+                  {/* Device label */}
+                  <div className="text-center mt-3 text-xs text-muted-foreground">
+                    {device.label}
+                  </div>
                 </div>
+
                 <div className="mt-4 text-center">
                   <Button
                     onClick={() => window.open(wallpaperUrl, "_blank")}

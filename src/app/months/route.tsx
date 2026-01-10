@@ -30,6 +30,41 @@ function getDeviceSafeArea(width: number, height: number) {
   return { top: 0, bottom: 0, left: 0, right: 0 };
 }
 
+// Enhanced typography system with dynamic scaling
+function getTypographySystem(height: number, density: string) {
+  const baseFontSize = height / 100;
+  const densityMultiplier = density === "compact" ? 0.9 : 1.0;
+
+  return {
+    title: baseFontSize * 3.8 * densityMultiplier,      // Large titles
+    header: baseFontSize * 2.4 * densityMultiplier,     // Month headers
+    subheader: baseFontSize * 1.8 * densityMultiplier,  // Sub headers
+    body: baseFontSize * 1.5 * densityMultiplier,       // Body text
+    small: baseFontSize * 1.2 * densityMultiplier,      // Small text
+    tiny: baseFontSize * 0.95 * densityMultiplier       // Tiny text
+  };
+}
+
+// Visual hierarchy system
+function getVisualHierarchy() {
+  return {
+    primary: { opacity: 1.0, fontWeight: 700 },
+    secondary: { opacity: 0.9, fontWeight: 600 },
+    tertiary: { opacity: 0.7, fontWeight: 400 },
+    quaternary: { opacity: 0.5, fontWeight: 300 }
+  };
+}
+
+// Enhanced safe area with better margins
+function getEnhancedSafeArea(width: number, height: number, baseSafeArea: ReturnType<typeof getDeviceSafeArea>) {
+  return {
+    top: Math.max(baseSafeArea.top, height * 0.08),
+    bottom: Math.max(baseSafeArea.bottom, height * 0.06),
+    left: Math.max(baseSafeArea.left, width * 0.05),
+    right: Math.max(baseSafeArea.right, width * 0.05)
+  };
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const widthParam = searchParams.get("width");
@@ -180,17 +215,21 @@ function renderMonths3x4(
   theme: ThemeConfig,
   monthNames: string[]
 ) {
+  // Enhanced typography system
+  const typography = getTypographySystem(height, density);
+  const hierarchy = getVisualHierarchy();
+
   // Optimized: Use 10% top, 60% middle, 30% bottom layout
   const topSection = height * 0.1;
   const middleSection = height * 0.6;
   const bottomSection = height * 0.3;
 
-  const monthGap = density === "compact" ? 20 : 28;
+  const monthGap = density === "compact" ? 24 : 32;
   const monthHeight = (middleSection - monthGap * 3) / 4;
   const monthWidth = (contentWidth - monthGap * 2) / 3;
-  const daySize = Math.min(monthWidth / 7.5, monthHeight / 6.5) * 1.12; // Increase by 12%
-  const dayGap = density === "compact" ? 6 : 8;
-  const fontSize = Math.max(daySize * 0.65, 24) * 1.1; // Increase by 10%
+  const daySize = Math.min(monthWidth / 7.5, monthHeight / 6.5) * 1.15;
+  const dayGap = density === "compact" ? 7 : 9;
+  const fontSize = Math.max(daySize * 0.68, 26);
 
   // Optimized: Use solid background instead of gradient for faster rendering
   const bgColor = theme.background;
@@ -237,25 +276,30 @@ function renderMonths3x4(
 
   const yearTextStyle = {
     display: "flex" as const,
-    fontSize: Math.max(width * 0.045, 52) * 1.1, // Increase by 10%
-    fontWeight: 600,
+    fontSize: typography.title,
+    fontWeight: hierarchy.primary.fontWeight,
     color: theme.textColor,
-    letterSpacing: 4,
+    opacity: hierarchy.primary.opacity,
+    letterSpacing: 5,
+    textShadow: "0 2px 12px rgba(255, 59, 48, 0.3)",
   };
 
   const daysLeftStyle = {
     display: "flex" as const,
-    fontSize: Math.max(width * 0.018 * 1.3, 22) * 1.1, // Increase by 10%
-    fontWeight: 500,
-    color: "#ff0000",
-    letterSpacing: 1,
+    fontSize: typography.subheader,
+    fontWeight: hierarchy.secondary.fontWeight,
+    color: "#ff3b30",
+    opacity: hierarchy.secondary.opacity,
+    letterSpacing: 1.2,
+    textShadow: "0 1px 8px rgba(255, 59, 48, 0.4)",
   };
 
   const percentageStyle = {
     display: "flex" as const,
-    fontSize: Math.max(width * 0.016, 20) * 1.1, // Increase by 10%
-    fontWeight: 500,
+    fontSize: typography.body,
+    fontWeight: hierarchy.tertiary.fontWeight,
     color: theme.textColor,
+    opacity: hierarchy.tertiary.opacity,
     letterSpacing: 1,
   };
 
@@ -296,14 +340,16 @@ function renderMonths3x4(
 
             const monthLabelStyle = {
               display: "flex" as const,
-              fontSize: Math.max(fontSize * 0.8, 20) * 1.1, // Increase by 10%
-              fontWeight: 600,
+              fontSize: typography.header,
+              fontWeight: hierarchy.primary.fontWeight,
               color: theme.textColor,
-              letterSpacing: 2,
-              padding: "4px 12px",
-              background: "rgba(255, 255, 255, 0.05)",
-              borderRadius: "8px",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              opacity: hierarchy.primary.opacity,
+              letterSpacing: 2.5,
+              padding: "6px 14px",
+              background: "rgba(255, 59, 48, 0.12)",
+              borderRadius: "10px",
+              border: "1px solid rgba(255, 59, 48, 0.25)",
+              boxShadow: "0 2px 8px rgba(255, 59, 48, 0.15)",
             };
 
             const boxes: React.ReactNode[] = [];
@@ -1093,11 +1139,6 @@ async function renderDailyQuote(
   density: string,
   theme: ThemeConfig
 ) {
-  // 15% top, 55% middle, 30% bottom layout
-  const topSection = height * 0.15;
-  const middleSection = height * 0.55;
-  const bottomSection = height * 0.3;
-
   // Calculate percentage
   const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
   const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
@@ -1105,43 +1146,23 @@ async function renderDailyQuote(
   // Fetch quote
   const quote = await getRandomQuote();
 
-  // Responsive font sizing
-  const quoteSize = Math.max(width * 0.028, 32) * 1.1; // Increase by 10%
-  const authorSize = Math.max(width * 0.02, 24) * 1.1; // Increase by 10%
+  // Enhanced typography system
+  const typography = getTypographySystem(height, density);
+  const hierarchy = getVisualHierarchy();
 
-  const quoteContainerStyle = {
+  // Responsive font sizing - premium quote typography
+  const quoteSize = typography.title * 1.2;
+  const authorSize = typography.subheader;
+
+  const mainContainerStyle = {
     display: "flex" as const,
     flexDirection: "column" as const,
     justifyContent: "center" as const,
     alignItems: "center" as const,
     width: "100%",
-    height: `${middleSection}px`,
-    position: "absolute" as const,
-    top: `${topSection}px`,
-    left: 0,
-    padding: `0 ${paddingX * 2}px`,
-  };
-
-  const footerStyle = {
-    display: "flex" as const,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    width: "100%",
-    height: `${bottomSection}px`,
-    position: "absolute" as const,
-    top: `${topSection + middleSection}px`,
-    left: 0,
-  };
-
-  const footerBoxStyle = {
-    display: "flex" as const,
-    flexDirection: "column" as const,
-    gap: 12,
-    alignItems: "center" as const,
-    padding: "20px 32px",
-    background: "rgba(0, 0, 0, 0.8)",
-    borderRadius: "16px",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
+    height: "100%",
+    padding: `${paddingY}px ${paddingX * 2}px`,
+    gap: 60,
   };
 
   return new ImageResponse(
@@ -1157,49 +1178,60 @@ async function renderDailyQuote(
           fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
-        {/* Quote in middle 55% */}
-        <div style={quoteContainerStyle}>
+        {/* Main content container - centered */}
+        <div style={mainContainerStyle}>
+          {/* Quote section */}
           <div style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 24,
-            maxWidth: "90%",
+            gap: 32,
+            maxWidth: "85%",
             textAlign: "center",
           }}>
             <div style={{
               display: "flex",
               fontSize: quoteSize,
-              fontWeight: 400,
+              fontWeight: hierarchy.secondary.fontWeight,
               color: theme.textColor,
+              opacity: hierarchy.primary.opacity,
               lineHeight: 1.5,
-              letterSpacing: 0.5,
+              letterSpacing: 0.8,
+              textShadow: "0 2px 16px rgba(255, 255, 255, 0.1)",
             }}>
               "{quote.text}"
             </div>
             <div style={{
               display: "flex",
               fontSize: authorSize,
-              fontWeight: 500,
-              color: "rgba(255, 255, 255, 0.7)",
+              fontWeight: hierarchy.tertiary.fontWeight,
+              color: theme.textColor,
+              opacity: hierarchy.tertiary.opacity,
               fontStyle: "italic",
-              letterSpacing: 1,
+              letterSpacing: 1.2,
             }}>
               — {quote.author}
             </div>
           </div>
-        </div>
 
-        {/* Footer with year, days left, and percentage */}
-        <div style={footerStyle}>
-          <div style={footerBoxStyle}>
-            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52) * 1.1, fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
+          {/* Year and details section - directly below quote */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            alignItems: "center",
+            padding: "20px 32px",
+            background: "rgba(0, 0, 0, 0.8)",
+            borderRadius: "16px",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+          }}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.045, 52), fontWeight: 600, color: theme.textColor, letterSpacing: 4 }}>
               {calendar.year}
             </div>
-            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22) * 1.1, fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.018 * 1.3, 22), fontWeight: 500, color: "#ff0000", letterSpacing: 1 }}>
               {calendar.daysLeft} days remaining
             </div>
-            <div style={{ display: "flex", fontSize: Math.max(width * 0.016, 20) * 1.1, fontWeight: 500, color: theme.textColor, letterSpacing: 1 }}>
+            <div style={{ display: "flex", fontSize: Math.max(width * 0.016, 20), fontWeight: 500, color: theme.textColor, letterSpacing: 1 }}>
               {percentageCompleted}% completed • {percentageRemaining}% remaining
             </div>
           </div>
