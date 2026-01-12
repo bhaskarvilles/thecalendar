@@ -1,0 +1,51 @@
+{
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
+      "WFWorkflowActionParameters": {
+        "WFCommentActionText": "Calendar Wallpaper Auto-Update\nThis shortcut downloads your calendar wallpaper and sets it as your lock screen.\n\nReplace the URL below with your custom wallpaper URL from the generator."
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.url",
+      "WFWorkflowActionParameters": {
+        "WFURLActionURL": "https://yourdomain.com/months?width=1320&height=2868&density=cozy&layout=months-3x4&theme=minimal-black"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
+      "WFWorkflowActionParameters": {
+        "WFHTTPMethod": "GET",
+        "ShowHeaders": false
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.setwallpaper",
+      "WFWorkflowActionParameters": {
+        "WFWallpaperLocation": "Lock Screen",
+        "WFWallpaperPreview": false
+      }
+    }
+  ],
+  "WFWorkflowClientVersion": "2605.0.5",
+  "WFWorkflowClientRelease": "16.0",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientRelease": "16.0",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 4282601983,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowTypes": [
+    "NCWidget",
+    "Watch"
+  ],
+  "WFWorkflowInputContentItemClasses": [],
+  "WFWorkflowImportQuestions": [
+    {
+      "Category": "Parameter",
+      "ParameterKey": "WFURLActionURL",
+      "ActionIndex": 1,
+      "Text": "Paste your wallpaper URL from the generator"
+    }
+  ]
+}

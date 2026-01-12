@@ -5,8 +5,9 @@ import { THEMES, Theme, ThemeConfig } from "@/lib/themes";
 import React from "react";
 
 export const runtime = "edge";
+export const revalidate = 3600; // Cache for 1 hour
 
-type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "daily-quote";
+type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "daily-quote" | "minimal-date";
 
 // Device-specific safe areas for iPhone lock screens
 function getDeviceSafeArea(width: number, height: number) {
@@ -71,6 +72,7 @@ export async function GET(req: NextRequest) {
   const heightParam = searchParams.get("height");
   const densityParam = searchParams.get("density");
   const layoutParam = searchParams.get("layout");
+  const themeParam = searchParams.get("theme");
 
   const width = Math.max(800, Math.min(3000, Number(widthParam) || 1320));
   const height = Math.max(1200, Math.min(4000, Number(heightParam) || 2868));
@@ -80,11 +82,15 @@ export async function GET(req: NextRequest) {
       layoutParam === "weeks" ||
       layoutParam === "days-left" ||
       layoutParam === "months-list" ||
-      layoutParam === "daily-quote"
+      layoutParam === "daily-quote" ||
+      layoutParam === "minimal-date"
       ? layoutParam
       : "months-3x4";
 
-  const theme: Theme = "minimal-black";
+  const theme: Theme =
+    themeParam === "dark-gray" || themeParam === "navy-blue"
+      ? themeParam
+      : "minimal-black";
 
   const calendar = getCurrentYearCalendar();
   const themeConfig = THEMES[theme];
@@ -175,6 +181,19 @@ export async function GET(req: NextRequest) {
     );
   } else if (layout === "daily-quote") {
     return renderDailyQuote(
+      calendar,
+      width,
+      height,
+      paddingX,
+      paddingY,
+      paddingBottom,
+      contentWidth,
+      contentHeight,
+      density,
+      themeConfig
+    );
+  } else if (layout === "minimal-date") {
+    return renderMinimalDate(
       calendar,
       width,
       height,
@@ -1234,6 +1253,139 @@ async function renderDailyQuote(
             <div style={{ display: "flex", fontSize: Math.max(width * 0.016, 20), fontWeight: 500, color: theme.textColor, letterSpacing: 1 }}>
               {percentageCompleted}% completed • {percentageRemaining}% remaining
             </div>
+          </div>
+        </div>
+      </div>
+    ),
+    { width, height }
+  );
+}
+
+function renderMinimalDate(
+  calendar: ReturnType<typeof getCurrentYearCalendar>,
+  width: number,
+  height: number,
+  paddingX: number,
+  paddingY: number,
+  paddingBottom: number,
+  contentWidth: number,
+  contentHeight: number,
+  density: string,
+  theme: ThemeConfig
+) {
+  const today = calendar.today;
+  const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const month = today.toLocaleDateString('en-US', { month: 'long' });
+  const day = today.getDate();
+  const year = today.getFullYear();
+
+  const typography = getTypographySystem(height, density);
+  const hierarchy = getVisualHierarchy();
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width,
+          height,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          background: theme.background,
+          color: theme.textColor,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          padding: `${paddingY}px ${paddingX}px ${paddingBottom}px`,
+        }}
+      >
+        {/* Day of week */}
+        <div style={{
+          display: "flex",
+          fontSize: typography.subheader,
+          fontWeight: hierarchy.tertiary.fontWeight,
+          color: theme.textSecondary,
+          opacity: hierarchy.tertiary.opacity,
+          letterSpacing: 8,
+          textTransform: "uppercase",
+          marginBottom: 20,
+        }}>
+          {dayOfWeek}
+        </div>
+
+        {/* Day number - Large */}
+        <div style={{
+          display: "flex",
+          fontSize: Math.min(height * 0.35, width * 0.6),
+          fontWeight: 700,
+          color: theme.dayToday,
+          lineHeight: 1,
+          marginBottom: 20,
+          textShadow: `0 4px 24px ${theme.shadowColor}`,
+        }}>
+          {day}
+        </div>
+
+        {/* Month and Year */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+        }}>
+          <div style={{
+            display: "flex",
+            fontSize: typography.title,
+            fontWeight: hierarchy.primary.fontWeight,
+            color: theme.textColor,
+            opacity: hierarchy.primary.opacity,
+            letterSpacing: 6,
+            textTransform: "uppercase",
+          }}>
+            {month}
+          </div>
+          <div style={{
+            display: "flex",
+            fontSize: typography.header,
+            fontWeight: hierarchy.secondary.fontWeight,
+            color: theme.textSecondary,
+            opacity: hierarchy.secondary.opacity,
+            letterSpacing: 4,
+          }}>
+            {year}
+          </div>
+        </div>
+
+        {/* Days left indicator */}
+        <div style={{
+          display: "flex",
+          position: "absolute",
+          bottom: paddingBottom + 40,
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+          padding: "16px 28px",
+          background: "rgba(0, 0, 0, 0.6)",
+          borderRadius: "12px",
+          border: `1px solid ${theme.borderColor}`,
+        }}>
+          <div style={{
+            display: "flex",
+            fontSize: typography.body,
+            fontWeight: hierarchy.tertiary.fontWeight,
+            color: theme.dayToday,
+            opacity: hierarchy.secondary.opacity,
+          }}>
+            {calendar.daysLeft} days remaining
+          </div>
+          <div style={{
+            display: "flex",
+            fontSize: typography.small,
+            fontWeight: hierarchy.quaternary.fontWeight,
+            color: theme.textSecondary,
+            opacity: hierarchy.quaternary.opacity,
+          }}>
+            {Math.round((calendar.daysGone / calendar.totalDays) * 100)}% of {year} complete
           </div>
         </div>
       </div>

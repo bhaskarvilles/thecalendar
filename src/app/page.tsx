@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/sheet";
 
 type Density = "cozy" | "compact";
-type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "daily-quote";
+type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "daily-quote" | "minimal-date";
 
 export default function Home() {
   const { theme, setTheme } = useTheme();
@@ -54,9 +54,11 @@ export default function Home() {
   const [deviceId, setDeviceId] = useState<string>("iphone-16-pro-max");
   const [density, setDensity] = useState<Density>("cozy");
   const [layout, setLayout] = useState<Layout>("months-3x4");
+  const [wallpaperTheme, setWallpaperTheme] = useState<"minimal-black" | "dark-gray" | "navy-blue">("minimal-black");
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -74,9 +76,36 @@ export default function Home() {
       height: String(device.height),
       density,
       layout,
+      theme: wallpaperTheme,
     });
     return `${origin}/months?${search.toString()}`;
-  }, [origin, device, density, layout]);
+  }, [origin, device, density, layout, wallpaperTheme]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + C to copy URL
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+        const selection = window.getSelection()?.toString();
+        if (!selection) {
+          e.preventDefault();
+          handleCopy();
+        }
+      }
+      // Ctrl/Cmd + D to download
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        handleDownload();
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [wallpaperUrl]);
+
+  // Reset preview loading when URL changes
+  useEffect(() => {
+    setPreviewLoading(true);
+  }, [wallpaperUrl]);
 
   const handleCopy = async () => {
     try {
@@ -166,6 +195,28 @@ export default function Home() {
                   </TooltipContent>
                 </Tooltip>
               )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = '/calendar-wallpaper.shortcut';
+                      link.download = 'calendar-wallpaper.shortcut';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                  >
+                    <Download className="size-4 mr-2" />
+                    Shortcut
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Download iOS Shortcut file for easy setup</p>
+                </TooltipContent>
+              </Tooltip>
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10">
@@ -478,6 +529,12 @@ export default function Home() {
                               <span className="text-xs text-muted-foreground">Random inspirational quote</span>
                             </div>
                           </SelectItem>
+                          <SelectItem value="minimal-date" className="text-foreground hover:bg-accent focus:bg-accent">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">Minimal Date</span>
+                              <span className="text-xs text-muted-foreground">Just today's date in large typography</span>
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <Alert className="border-blue-500/20 bg-blue-500/5">
@@ -488,6 +545,7 @@ export default function Home() {
                           {layout === "weeks" && "Weekly view showing all 52 weeks of the year."}
                           {layout === "days-left" && "Focus on remaining days with countdown visualization."}
                           {layout === "daily-quote" && "Random inspirational quote that changes each time, perfect for daily motivation."}
+                          {layout === "minimal-date" && "Ultra-minimal design showing only today's date in beautiful typography."}
                         </AlertDescription>
                       </Alert>
                     </div>
@@ -522,6 +580,54 @@ export default function Home() {
                           >
                             <span className="text-sm font-medium mb-1">Compact</span>
                             <span className="text-xs text-muted-foreground text-center">Fits more detail</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <Separator className="bg-border" />
+
+                    {/* Theme Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold">Wallpaper Theme</Label>
+                      <RadioGroup value={wallpaperTheme} onValueChange={(value) => setWallpaperTheme(value as typeof wallpaperTheme)} className="grid grid-cols-3 gap-2">
+                        <div>
+                          <RadioGroupItem value="minimal-black" id="minimal-black" className="peer sr-only" />
+                          <Label
+                            htmlFor="minimal-black"
+                            className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 cursor-pointer transition-all ${wallpaperTheme === "minimal-black"
+                              ? "border-red-500 bg-red-500/15 shadow-[0_0_20px_rgba(255,0,0,0.3)]"
+                              : "border-border bg-muted hover:border-border/80"
+                              }`}
+                          >
+                            <div className="size-8 rounded-full bg-black border-2 border-white/20 mb-2"></div>
+                            <span className="text-xs font-medium text-center">Pitch Black</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="dark-gray" id="dark-gray" className="peer sr-only" />
+                          <Label
+                            htmlFor="dark-gray"
+                            className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 cursor-pointer transition-all ${wallpaperTheme === "dark-gray"
+                              ? "border-red-500 bg-red-500/15 shadow-[0_0_20px_rgba(255,0,0,0.3)]"
+                              : "border-border bg-muted hover:border-border/80"
+                              }`}
+                          >
+                            <div className="size-8 rounded-full bg-[#0a0a0a] border-2 border-white/20 mb-2"></div>
+                            <span className="text-xs font-medium text-center">Dark Gray</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="navy-blue" id="navy-blue" className="peer sr-only" />
+                          <Label
+                            htmlFor="navy-blue"
+                            className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 cursor-pointer transition-all ${wallpaperTheme === "navy-blue"
+                              ? "border-blue-500 bg-blue-500/15 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                              : "border-border bg-muted hover:border-border/80"
+                              }`}
+                          >
+                            <div className="size-8 rounded-full bg-[#0f172a] border-2 border-blue-500/30 mb-2"></div>
+                            <span className="text-xs font-medium text-center">Navy Blue</span>
                           </Label>
                         </div>
                       </RadioGroup>
@@ -686,6 +792,14 @@ export default function Home() {
 
                           {/* Screen content */}
                           <div className="relative aspect-[9/19.5] bg-black overflow-hidden">
+                            {previewLoading && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                                <div className="flex flex-col items-center gap-3">
+                                  <div className="size-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                                  <p className="text-xs text-muted-foreground">Loading preview...</p>
+                                </div>
+                              </div>
+                            )}
                             <div className="w-full h-full" style={{
                               transform: `scale(${280 / device.width})`,
                               transformOrigin: 'top left',
@@ -697,6 +811,7 @@ export default function Home() {
                                 src={wallpaperUrl}
                                 className="w-full h-full border-0"
                                 title="Calendar Preview"
+                                onLoad={() => setPreviewLoading(false)}
                               />
                             </div>
                           </div>
