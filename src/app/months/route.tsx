@@ -9,40 +9,67 @@ export const revalidate = 3600; // Cache for 1 hour
 
 type Layout = "months-3x4" | "months-list" | "year" | "weeks" | "days-left" | "daily-quote" | "minimal-date";
 
-// Device-specific safe areas for iPhone lock screens
+// Enhanced device-specific safe areas for optimal wallpaper display
 function getDeviceSafeArea(width: number, height: number) {
+  const aspectRatio = height / width;
   const isIPhone = height > width && height > 2000;
   const isIPad = width > 1400;
 
-  // iPhone safe areas (top notch, bottom home indicator)
+  // iPhone with notch/Dynamic Island (X, XS, 11 Pro, 12-17 series)
   if (isIPhone) {
-    const topSafe = Math.max(44, height * 0.05); // Notch area
-    const bottomSafe = Math.max(34, height * 0.04); // Home indicator
-    const sideSafe = Math.max(20, width * 0.02); // Side margins
-    return { top: topSafe, bottom: bottomSafe, left: sideSafe, right: sideSafe };
+    // More aggressive safe areas for notched iPhones
+    const topSafe = Math.max(59, height * 0.06); // Notch/Dynamic Island area
+    const bottomSafe = Math.max(34, height * 0.045); // Home indicator area
+    const sideSafe = Math.max(24, width * 0.025); // Side margins with rounded corners
+
+    return {
+      top: topSafe,
+      bottom: bottomSafe,
+      left: sideSafe,
+      right: sideSafe
+    };
   }
 
-  // iPad safe areas
+  // iPad - different safe areas based on size
   if (isIPad) {
-    return { top: 20, bottom: 20, left: 40, right: 40 };
+    // Larger iPads need more padding
+    const isPadPro = width >= 2000; // iPad Pro 12.9"
+
+    if (isPadPro) {
+      return { top: 40, bottom: 40, left: 60, right: 60 };
+    } else {
+      return { top: 30, bottom: 30, left: 50, right: 50 };
+    }
   }
 
-  // Default
-  return { top: 0, bottom: 0, left: 0, right: 0 };
+  // Default safe areas for other devices
+  return { top: 20, bottom: 20, left: 20, right: 20 };
 }
 
-// Enhanced typography system with dynamic scaling
-function getTypographySystem(height: number, density: string) {
+// Enhanced typography system with dynamic scaling and constraints
+function getTypographySystem(height: number, density: string, width?: number) {
   const baseFontSize = height / 100;
-  const densityMultiplier = density === "compact" ? 0.9 : 1.0;
+  const densityMultiplier = density === "compact" ? 0.88 : 1.0;
+
+  // Device-specific adjustments
+  const isSmallDevice = height < 2400;
+  const isLargeDevice = height > 2700;
+  const deviceMultiplier = isSmallDevice ? 1.05 : isLargeDevice ? 0.95 : 1.0;
+
+  // Helper function to constrain font sizes
+  const constrain = (size: number, min: number, max: number) => {
+    return Math.max(min, Math.min(max, size));
+  };
+
+  const baseSize = baseFontSize * densityMultiplier * deviceMultiplier;
 
   return {
-    title: baseFontSize * 3.8 * densityMultiplier,      // Large titles
-    header: baseFontSize * 2.4 * densityMultiplier,     // Month headers
-    subheader: baseFontSize * 1.8 * densityMultiplier,  // Sub headers
-    body: baseFontSize * 1.5 * densityMultiplier,       // Body text
-    small: baseFontSize * 1.2 * densityMultiplier,      // Small text
-    tiny: baseFontSize * 0.95 * densityMultiplier       // Tiny text
+    title: constrain(baseSize * 3.8, 48, 120),        // Large titles (48-120px)
+    header: constrain(baseSize * 2.4, 32, 72),        // Month headers (32-72px)
+    subheader: constrain(baseSize * 1.8, 24, 56),     // Sub headers (24-56px)
+    body: constrain(baseSize * 1.5, 20, 48),          // Body text (20-48px)
+    small: constrain(baseSize * 1.2, 16, 36),         // Small text (16-36px)
+    tiny: constrain(baseSize * 0.95, 14, 28)          // Tiny text (14-28px)
   };
 }
 
@@ -137,7 +164,8 @@ export async function GET(req: NextRequest) {
       contentHeight,
       density,
       themeConfig,
-      monthNames
+      monthNames,
+      safeArea
     );
   } else if (layout === "months-list") {
     return renderMonthsList(
@@ -151,7 +179,8 @@ export async function GET(req: NextRequest) {
       contentHeight,
       density,
       themeConfig,
-      monthNames
+      monthNames,
+      safeArea
     );
   } else if (layout === "year") {
     return renderYearView(
@@ -164,7 +193,8 @@ export async function GET(req: NextRequest) {
       contentWidth,
       contentHeight,
       density,
-      themeConfig
+      themeConfig,
+      safeArea
     );
   } else if (layout === "weeks") {
     return renderWeeksView(
@@ -177,7 +207,8 @@ export async function GET(req: NextRequest) {
       contentWidth,
       contentHeight,
       density,
-      themeConfig
+      themeConfig,
+      safeArea
     );
   } else if (layout === "daily-quote") {
     return renderDailyQuote(
@@ -190,7 +221,8 @@ export async function GET(req: NextRequest) {
       contentWidth,
       contentHeight,
       density,
-      themeConfig
+      themeConfig,
+      safeArea
     );
   } else if (layout === "minimal-date") {
     return renderMinimalDate(
@@ -203,7 +235,8 @@ export async function GET(req: NextRequest) {
       contentWidth,
       contentHeight,
       density,
-      themeConfig
+      themeConfig,
+      safeArea
     );
   } else {
     return renderDaysLeftView(
@@ -216,7 +249,8 @@ export async function GET(req: NextRequest) {
       contentWidth,
       contentHeight,
       density,
-      themeConfig
+      themeConfig,
+      safeArea
     );
   }
 }
@@ -232,23 +266,31 @@ function renderMonths3x4(
   contentHeight: number,
   density: string,
   theme: ThemeConfig,
-  monthNames: string[]
+  monthNames: string[],
+  safeArea: ReturnType<typeof getDeviceSafeArea>
 ) {
   // Enhanced typography system
-  const typography = getTypographySystem(height, density);
+  const typography = getTypographySystem(height, density, width);
   const hierarchy = getVisualHierarchy();
 
-  // Optimized: Use 10% top, 60% middle, 30% bottom layout
-  const topSection = height * 0.1;
-  const middleSection = height * 0.6;
-  const bottomSection = height * 0.3;
+  // Optimized layout: 8% top, 62% middle, 30% bottom for better balance
+  const topSection = height * 0.08;
+  const middleSection = height * 0.62;
+  const bottomSection = height * 0.30;
 
-  const monthGap = density === "compact" ? 24 : 32;
-  const monthHeight = (middleSection - monthGap * 3) / 4;
-  const monthWidth = (contentWidth - monthGap * 2) / 3;
-  const daySize = Math.min(monthWidth / 7.5, monthHeight / 6.5) * 1.15;
-  const dayGap = density === "compact" ? 7 : 9;
-  const fontSize = Math.max(daySize * 0.68, 26);
+  // Improved spacing calculations with safe area consideration
+  const effectiveWidth = contentWidth - (safeArea.left + safeArea.right) * 0.3;
+  const effectiveHeight = middleSection - (safeArea.top + safeArea.bottom) * 0.2;
+
+  const monthGap = density === "compact" ? 20 : 28;
+  const monthHeight = (effectiveHeight - monthGap * 3) / 4;
+  const monthWidth = (effectiveWidth - monthGap * 2) / 3;
+
+  // Optimized day size calculation with better constraints
+  const maxDaySize = Math.min(monthWidth / 7.5, monthHeight / 6.5) * 1.2;
+  const daySize = Math.max(Math.min(maxDaySize, 65), 28); // Constrain between 28-65px
+  const dayGap = density === "compact" ? 6 : 8;
+  const fontSize = Math.max(daySize * 0.7, 24);
 
   // Optimized: Use solid background instead of gradient for faster rendering
   const bgColor = theme.background;
@@ -265,7 +307,7 @@ function renderMonths3x4(
     justifyContent: "center" as const,
     alignItems: "flex-start" as const,
     position: "absolute" as const,
-    top: `${topSection}px`,
+    top: `${topSection + safeArea.top * 0.5}px`,
     left: `${paddingX}px`,
     width: `${contentWidth}px`,
     height: `${middleSection}px`,
@@ -503,17 +545,25 @@ function renderMonthsList(
   contentHeight: number,
   density: string,
   theme: ThemeConfig,
-  monthNames: string[]
+  monthNames: string[],
+  safeArea: ReturnType<typeof getDeviceSafeArea>
 ) {
-  // 10% top, 60% middle, 30% bottom layout
-  const topSection = height * 0.1;
-  const middleSection = height * 0.6;
-  const bottomSection = height * 0.3;
+  // Enhanced typography for list layout
+  const typography = getTypographySystem(height, density, width);
+  const hierarchy = getVisualHierarchy();
 
-  const monthGap = density === "compact" ? 8 : 12;
-  const monthHeight = (middleSection - monthGap * 11) / 12;
-  const daySize = (monthHeight / 6) * 1.12; // Increase by 12%
-  const dayGap = density === "compact" ? daySize * 0.1 : daySize * 0.15;
+  // Optimized layout: 8% top, 64% middle, 28% bottom
+  const topSection = height * 0.08;
+  const middleSection = height * 0.64;
+  const bottomSection = height * 0.28;
+
+  // Improved spacing with safe area consideration
+  const effectiveHeight = middleSection - (safeArea.top + safeArea.bottom) * 0.15;
+
+  const monthGap = density === "compact" ? 6 : 10;
+  const monthHeight = (effectiveHeight - monthGap * 11) / 12;
+  const daySize = Math.max((monthHeight / 6) * 1.15, 22); // Minimum 22px
+  const dayGap = density === "compact" ? daySize * 0.08 : daySize * 0.12;
 
 
   // Calculate percentage
@@ -699,19 +749,25 @@ function renderYearView(
   contentWidth: number,
   contentHeight: number,
   density: string,
-  theme: ThemeConfig
+  theme: ThemeConfig,
+  safeArea: ReturnType<typeof getDeviceSafeArea>
 ) {
-  // 10% top, 60% middle, 30% bottom layout
-  const topSection = height * 0.1;
-  const middleSection = height * 0.6;
-  const bottomSection = height * 0.3;
+  // Enhanced typography for year view
+  const typography = getTypographySystem(height, density, width);
+  const hierarchy = getVisualHierarchy();
 
+  // Optimized layout: 10% top, 62% middle, 28% bottom
+  const topSection = height * 0.10;
+  const middleSection = height * 0.62;
+  const bottomSection = height * 0.28;
 
   // Calculate percentage
   const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
   const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
 
-  const daySize = Math.min(middleSection / 53, contentWidth / 53) * 1.12; // Increase by 12%
+  // Improved dot sizing with safe area consideration
+  const effectiveArea = Math.min(middleSection - safeArea.top * 0.3, contentWidth - safeArea.left * 0.3);
+  const daySize = Math.max(Math.min(effectiveArea / 53, 18) * 1.18, 8); // Constrain between 8-21px
   const gap = density === "compact" ? 2 : 3;
 
   const headerStyle = {
@@ -824,20 +880,26 @@ function renderWeeksView(
   contentWidth: number,
   contentHeight: number,
   density: string,
-  theme: ThemeConfig
+  theme: ThemeConfig,
+  safeArea: ReturnType<typeof getDeviceSafeArea>
 ) {
-  // 10% top, 60% middle, 30% bottom layout
-  const topSection = height * 0.1;
-  const middleSection = height * 0.6;
-  const bottomSection = height * 0.3;
+  // Enhanced typography for weeks view
+  const typography = getTypographySystem(height, density, width);
+  const hierarchy = getVisualHierarchy();
 
+  // Optimized layout: 10% top, 64% middle, 26% bottom
+  const topSection = height * 0.10;
+  const middleSection = height * 0.64;
+  const bottomSection = height * 0.26;
 
   // Calculate percentage
   const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
   const percentageRemaining = Math.round((calendar.daysLeft / calendar.totalDays) * 100);
 
-  const weekGap = density === "compact" ? 3 : 4;
-  const weekHeight = (middleSection - weekGap * (calendar.weeks.length - 1)) / calendar.weeks.length;
+  // Improved spacing with safe area consideration
+  const effectiveHeight = middleSection - (safeArea.top + safeArea.bottom) * 0.2;
+  const weekGap = density === "compact" ? 2 : 3;
+  const weekHeight = Math.max((effectiveHeight - weekGap * (calendar.weeks.length - 1)) / calendar.weeks.length, 30);
   const dayWidth = (contentWidth - weekGap * 6) / 7;
 
   const headerStyle = {
@@ -980,13 +1042,17 @@ function renderDaysLeftView(
   contentWidth: number,
   contentHeight: number,
   density: string,
-  theme: ThemeConfig
+  theme: ThemeConfig,
+  safeArea: ReturnType<typeof getDeviceSafeArea>
 ) {
-  // 10% top, 60% middle, 30% bottom layout
-  const topSection = height * 0.1;
-  const middleSection = height * 0.6;
-  const bottomSection = height * 0.3;
+  // Enhanced typography for days left view
+  const typography = getTypographySystem(height, density, width);
+  const hierarchy = getVisualHierarchy();
 
+  // Optimized layout: 12% top, 62% middle, 26% bottom
+  const topSection = height * 0.12;
+  const middleSection = height * 0.62;
+  const bottomSection = height * 0.26;
 
   // Calculate percentage
   const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
@@ -996,11 +1062,16 @@ function renderDaysLeftView(
     .flatMap((m) => m.days)
     .filter((d) => !d.isPast && !d.isToday);
 
-  const daySize = Math.min(
-    Math.sqrt((middleSection * contentWidth) / remainingDays.length) * 0.9,
-    40
-  );
-  const gap = density === "compact" ? 4 : 6;
+  // Improved day size calculation with safe area consideration
+  const effectiveArea = (middleSection - safeArea.top * 0.3) * (contentWidth - safeArea.left * 0.3);
+  const daySize = Math.max(
+    Math.min(
+      Math.sqrt(effectiveArea / remainingDays.length) * 0.92,
+      42
+    ),
+    24
+  ); // Constrain between 24-42px
+  const gap = density === "compact" ? 3 : 5;
 
   const headerStyle = {
     display: "flex" as const,
@@ -1156,7 +1227,8 @@ async function renderDailyQuote(
   contentWidth: number,
   contentHeight: number,
   density: string,
-  theme: ThemeConfig
+  theme: ThemeConfig,
+  safeArea: ReturnType<typeof getDeviceSafeArea>
 ) {
   // Calculate percentage
   const percentageCompleted = Math.round((calendar.daysGone / calendar.totalDays) * 100);
@@ -1166,12 +1238,17 @@ async function renderDailyQuote(
   const quote = await getRandomQuote();
 
   // Enhanced typography system
-  const typography = getTypographySystem(height, density);
+  const typography = getTypographySystem(height, density, width);
   const hierarchy = getVisualHierarchy();
 
-  // Responsive font sizing - premium quote typography
-  const quoteSize = typography.title * 1.2;
-  const authorSize = typography.subheader;
+  // Responsive font sizing - premium quote typography with safe area consideration
+  const isSmallDevice = height < 2400;
+  const quoteSize = Math.max(typography.title * (isSmallDevice ? 1.0 : 1.2), 36);
+  const authorSize = Math.max(typography.subheader * 0.9, 24);
+
+  // Improved padding with safe area consideration
+  const effectivePaddingX = paddingX + safeArea.left * 0.4;
+  const effectivePaddingY = paddingY + safeArea.top * 0.3;
 
   const mainContainerStyle = {
     display: "flex" as const,
@@ -1180,8 +1257,8 @@ async function renderDailyQuote(
     alignItems: "center" as const,
     width: "100%",
     height: "100%",
-    padding: `${paddingY}px ${paddingX * 2}px`,
-    gap: 60,
+    padding: `${effectivePaddingY}px ${effectivePaddingX * 1.5}px`,
+    gap: 50,
   };
 
   return new ImageResponse(
@@ -1204,8 +1281,8 @@ async function renderDailyQuote(
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 32,
-            maxWidth: "85%",
+            gap: 28,
+            maxWidth: "88%",
             textAlign: "center",
           }}>
             <div style={{
@@ -1214,8 +1291,8 @@ async function renderDailyQuote(
               fontWeight: hierarchy.secondary.fontWeight,
               color: theme.textColor,
               opacity: hierarchy.primary.opacity,
-              lineHeight: 1.5,
-              letterSpacing: 0.8,
+              lineHeight: 1.45,
+              letterSpacing: 0.6,
               textShadow: "0 2px 16px rgba(255, 255, 255, 0.1)",
             }}>
               "{quote.text}"
@@ -1271,7 +1348,8 @@ function renderMinimalDate(
   contentWidth: number,
   contentHeight: number,
   density: string,
-  theme: ThemeConfig
+  theme: ThemeConfig,
+  safeArea: ReturnType<typeof getDeviceSafeArea>
 ) {
   const today = calendar.today;
   const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
@@ -1279,8 +1357,13 @@ function renderMinimalDate(
   const day = today.getDate();
   const year = today.getFullYear();
 
-  const typography = getTypographySystem(height, density);
+  const typography = getTypographySystem(height, density, width);
   const hierarchy = getVisualHierarchy();
+
+  // Improved padding with safe area consideration
+  const effectivePaddingY = paddingY + safeArea.top * 0.4;
+  const effectivePaddingBottom = paddingBottom + safeArea.bottom * 0.4;
+  const effectivePaddingX = paddingX + safeArea.left * 0.3;
 
   return new ImageResponse(
     (
@@ -1296,7 +1379,7 @@ function renderMinimalDate(
           background: theme.background,
           color: theme.textColor,
           fontFamily: "system-ui, -apple-system, sans-serif",
-          padding: `${paddingY}px ${paddingX}px ${paddingBottom}px`,
+          padding: `${effectivePaddingY}px ${effectivePaddingX}px ${effectivePaddingBottom}px`,
         }}
       >
         {/* Day of week */}
@@ -1360,7 +1443,7 @@ function renderMinimalDate(
         <div style={{
           display: "flex",
           position: "absolute",
-          bottom: paddingBottom + 40,
+          bottom: effectivePaddingBottom + 30,
           flexDirection: "column",
           alignItems: "center",
           gap: 8,
